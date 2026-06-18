@@ -1,0 +1,123 @@
+{
+  "info": {
+    "_postman_id": "emo-ai-collection-v1",
+    "name": "Emergency Management Office AI",
+    "description": "Example requests for the Emergency Management Office AI API.\n\nSimulated earthquake scenario: M6.5 earthquake centered at Sacramento State University (38.5616° N, 121.4246° W) with a 10-mile affected radius.\n\nEndpoint: POST http://localhost:8092/emergency/event",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Earthquake START — Sacramento State University",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"start\",\n  \"timestamp\": \"2026-06-18T14:32:00Z\",\n  \"event_type\": \"earthquake\",\n  \"center_lat\": 38.5616,\n  \"center_lon\": -121.4246,\n  \"diameter_miles\": 10.0,\n  \"affected_population\": 85000,\n  \"title\": \"M6.5 Earthquake — Sacramento State University\",\n  \"description\": \"A magnitude 6.5 earthquake struck beneath the Sacramento State University campus at 38.5616N, 121.4246W at a depth of 8 kilometers at 14:32 UTC. The epicenter is located within the university's Hornet Athletic Complex. Significant ground shaking (MMI VII - Very Strong) reported across the greater Sacramento metro area. Initial reports indicate multiple structural failures on the Sac State campus including Guy West Bridge and the University Library. Widespread power outages affecting an estimated 40,000 customers in Sacramento County. The American River Parkway trail system is closed due to reported liquefaction along the riverbanks. Sacramento Regional Transit light rail service is suspended city-wide pending track inspection. CSUS has declared a campus emergency and is initiating evacuation. Local hospitals including UC Davis Medical Center and Mercy General are activating mass casualty protocols.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8092/emergency/event",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8092",
+          "path": ["emergency", "event"]
+        },
+        "description": "Initial START notification for the simulated M6.5 earthquake at Sacramento State University. Triggers the full agent pipeline: coordinator logs the event, researcher builds a SITREP, Bob the Seismologist provides seismic analysis, writer produces the article and first blog post, producer creates the broadcast brief, and script writer generates the HeyGen script."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Earthquake UPDATE — Aftershock & Damage Assessment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"update\",\n  \"timestamp\": \"2026-06-18T16:15:00Z\",\n  \"event_type\": \"earthquake\",\n  \"center_lat\": 38.5616,\n  \"center_lon\": -121.4246,\n  \"diameter_miles\": 10.0,\n  \"affected_population\": 85000,\n  \"title\": \"M6.5 Earthquake UPDATE — Aftershock M4.2 Recorded, Damage Assessment Ongoing\",\n  \"description\": \"UPDATE as of 16:15 UTC: A M4.2 aftershock was recorded at 15:48 UTC at the same epicenter location, depth 6 km. Search and rescue operations are underway on the Sacramento State campus. Confirmed structural collapses: Solano Hall (3-story residential), the Science II building, and the parking structure at Lot 3. Sacramento Fire Department has confirmed 14 fatalities and 127 injuries, with search and rescue operations ongoing in Solano Hall where approximately 20 residents remain unaccounted for. The California Governor has declared a State of Emergency for Sacramento County. The National Guard has been activated with 500 troops en route. Sacramento Emergency Operations Center is fully activated. All downtown Sacramento buildings are being evacuated for structural inspection. The Sacramento River levee system is under inspection — no breaches confirmed at this time. Emergency shelter has been established at ARCO Arena (capacity 3,000) and Florin High School gymnasium (capacity 500). Mandatory evacuation order issued for a 1-mile radius around Sac State campus.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8092/emergency/event",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8092",
+          "path": ["emergency", "event"]
+        },
+        "description": "UPDATE notification 1 hour 43 minutes after the initial event. Includes aftershock data, confirmed casualties, shelter locations, and government response. The pipeline will update the event log, revise the SITREP, update the article, append a second blog post, and regenerate the broadcast script."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Earthquake END — All Clear, Recovery Phase",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"end\",\n  \"timestamp\": \"2026-06-19T08:00:00Z\",\n  \"event_type\": \"earthquake\",\n  \"center_lat\": 38.5616,\n  \"center_lon\": -121.4246,\n  \"diameter_miles\": 10.0,\n  \"affected_population\": 85000,\n  \"title\": \"M6.5 Earthquake CLOSED — Recovery Phase Initiated\",\n  \"description\": \"CLOSURE as of 08:00 UTC June 19: The active emergency response phase for the M6.5 Sacramento State University earthquake has concluded. Final confirmed casualties: 19 fatalities, 312 injuries (47 critical). All missing persons from Solano Hall have been accounted for — 4 survivors rescued, 2 confirmed fatalities. Search and rescue operations are complete. USGS has recorded 38 aftershocks since the main event, the largest being the M4.2 at 15:48 UTC on June 18. Seismologists indicate elevated aftershock probability will persist for 14 days. Mandatory evacuation for the 1-mile Sac State radius remains in effect pending structural inspections. ARCO Arena shelter currently houses 1,247 displaced residents. FEMA has opened 3 Disaster Recovery Centers in Sacramento County. California Governor has requested a Federal Major Disaster Declaration. Sacramento State University has suspended all classes for the remainder of the semester. Estimated total damage: $2.1 billion. Recovery phase is now led by the Long-Term Recovery Group. This event is being closed in the EMO AI system — recovery monitoring transitions to standard operations.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8092/emergency/event",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8092",
+          "path": ["emergency", "event"]
+        },
+        "description": "END notification marking the close of the active emergency phase. Triggers final updates to the event log with closure notation, a final revised article, a closing blog post entry, and a final broadcast script summarizing the event outcome and recovery status."
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8092/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8092",
+          "path": ["health"]
+        },
+        "description": "Verify the EMO AI API is running."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8092",
+      "type": "string"
+    }
+  ]
+}
