@@ -1,0 +1,2 @@
+# emergency_management_office_ai
+Emergency management office coordinating information and activities
