@@ -32,7 +32,11 @@ dashboard and Evo 1.3 training.
 
 3. **Confirmed site coordinates** in `config/monitoring_locations.json` for
    `vista-del-lago`, `folsom-high`, and `cordova-park` (must match how spots are
-   registered in PeopleSense). Pass `--coords-confirmed` only after FCUSD verifies.
+registered in PeopleSense). Pass `--coords-confirmed` only after FCUSD verifies.
+
+See `DATA_COLLECTION.md` for the GGV2 mapping and drill export procedure. Use
+`scripts/export_peoplesense_occupancy.py` to create timestamped XML from the
+authenticated PeopleSense GET API; it never reads directly from a Pi.
 
 ## Preflight
 

@@ -19,8 +19,9 @@ class Settings:
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
-    # Neon (Vercel Postgres)
+    # Disaster history — local SQLite by default; set DATABASE_URL for Neon/Postgres
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+    DISASTER_HISTORY_DB: str = os.getenv("DISASTER_HISTORY_DB", "")
 
     # Evo 1.0 model
     EVO_MODEL_VERSION: str = os.getenv("EVO_MODEL_VERSION", "evo1.2")
@@ -28,6 +29,13 @@ class Settings:
     EVO_PREFER_OPENVINO: bool = os.getenv("EVO_PREFER_OPENVINO", "true").lower() == "true"
     EVO_HYBRID_MODE: bool = os.getenv("EVO_HYBRID_MODE", "true").lower() == "true"
     EVO_TIME_CATEGORIES: str = os.getenv("EVO_TIME_CATEGORIES", "Train Station")
+
+    # Evo 1.3 research mode (internet + enriched reference — not production)
+    EVO13_MODEL_VERSION: str = os.getenv("EVO13_MODEL_VERSION", "evo1.3")
+    EVO13_REFERENCE_PATH: str = os.getenv(
+        "EVO13_REFERENCE_PATH",
+        str(PROJECT_ROOT / "data/processed/evacuation_reference_enriched_rows.json"),
+    )
 
     # CORS — comma-separated extra origins (e.g. Vercel preview URL)
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "")

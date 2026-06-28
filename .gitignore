@@ -3,6 +3,7 @@
 
 # Generated output
 output/
+data/disaster_history.db
 
 # Python
 __pycache__/

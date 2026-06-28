@@ -1,0 +1,38 @@
+{
+  "model_version": "evo1.0",
+  "split": {
+    "strategy": "80/20 unique-row split stratified by normalized scenario; event expansions remain grouped",
+    "train_unique_rows": 1632,
+    "validation_unique_rows": 409,
+    "train_expanded_rows": 1881,
+    "validation_expanded_rows": 472
+  },
+  "validation_metrics": {
+    "mae_success_pct": 1.720990538597107,
+    "r2_success_pct": -0.006532907485961914,
+    "samples_success_pct": 463,
+    "mae_time_min": 0.7818477153778076,
+    "r2_time_min": 0.6781333088874817,
+    "samples_time_min": 472
+  },
+  "export_validation": {
+    "onnx_matches_pytorch_within_1pct": true,
+    "onnx_max_abs_difference": 4.76837158203125e-07,
+    "openvino_matches_pytorch_within_1pct": true,
+    "openvino_max_abs_difference": 0.0002288818359375,
+    "openvino_ir_loaded": true,
+    "single_sample_latency_ms_p50": 0.329797,
+    "single_sample_latency_ms_p95": 0.7137347999999997,
+    "single_sample_under_10ms_p50": true,
+    "single_sample_under_10ms_p95": true
+  },
+  "quality_gates": {
+    "val_mae_time_under_1_5_min": true,
+    "val_mae_success_under_3_pct": true,
+    "onnx_matches_pytorch_within_1pct": true,
+    "openvino_matches_pytorch_within_1pct": true,
+    "openvino_ir_loaded": true,
+    "single_sample_under_10ms_p95": true
+  },
+  "all_quality_gates_pass": true
+}

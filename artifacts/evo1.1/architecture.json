@@ -1,0 +1,81 @@
+{
+  "name": "Evo 1.1 dual-head MLP",
+  "model_version": "evo1.1",
+  "layers": [
+    {
+      "id": "in",
+      "type": "input",
+      "label": "Engineered inputs",
+      "column": 0,
+      "lane": 0.5
+    },
+    {
+      "id": "success1",
+      "type": "dense",
+      "label": "Success 128\nReLU + Dropout",
+      "column": 1,
+      "lane": 0.25
+    },
+    {
+      "id": "success2",
+      "type": "dense",
+      "label": "Success 64\nshortfall",
+      "column": 2,
+      "lane": 0.25
+    },
+    {
+      "id": "success_out",
+      "type": "output",
+      "label": "success %",
+      "column": 3,
+      "lane": 0.25
+    },
+    {
+      "id": "time1",
+      "type": "dense",
+      "label": "Time 128\nReLU + Dropout",
+      "column": 1,
+      "lane": 0.75
+    },
+    {
+      "id": "time2",
+      "type": "dense",
+      "label": "Time 64\nlog-time",
+      "column": 2,
+      "lane": 0.75
+    },
+    {
+      "id": "time_out",
+      "type": "output",
+      "label": "time min",
+      "column": 3,
+      "lane": 0.75
+    }
+  ],
+  "edges": [
+    [
+      "in",
+      "success1"
+    ],
+    [
+      "success1",
+      "success2"
+    ],
+    [
+      "success2",
+      "success_out"
+    ],
+    [
+      "in",
+      "time1"
+    ],
+    [
+      "time1",
+      "time2"
+    ],
+    [
+      "time2",
+      "time_out"
+    ]
+  ]
+}

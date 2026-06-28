@@ -13,6 +13,9 @@ from config.settings import settings
 logger = logging.getLogger(__name__)
 
 REFERENCE_PATH = Path(__file__).resolve().parents[1] / "data" / "processed" / "evacuation_reference.json"
+ENRICHED_REFERENCE_PATH = (
+    Path(__file__).resolve().parents[1] / "data" / "processed" / "evacuation_reference_enriched_rows.json"
+)
 
 SCENARIO_BY_EVENT = {
     "fire": "Electrical Fire",
@@ -38,18 +41,37 @@ EVO_TIME_CATEGORIES_DEFAULT = ("Train Station",)
 class EvacuationPredictor:
     """Predict evacuation success rate and time from historical reference records."""
 
-    def __init__(self, reference_path: Path = REFERENCE_PATH, *, use_evo: bool = False):
+    def __init__(
+        self,
+        reference_path: Path = REFERENCE_PATH,
+        *,
+        use_evo: bool = False,
+        use_evo13: bool = False,
+    ):
+        self.use_evo13 = use_evo13
+        self.use_evo = use_evo and not use_evo13
+        if use_evo13:
+            configured = Path(settings.EVO13_REFERENCE_PATH)
+            reference_path = configured if configured.exists() else ENRICHED_REFERENCE_PATH
         self.reference_path = reference_path
         self.records = self._load_records()
-        self.use_evo = use_evo
         self._evo = None
+        self._evo13 = None
         self._evo_schema: Optional[dict[str, Any]] = None
-        if use_evo:
-            from services.evo_runtime import get_evo_runtime
+        if self.use_evo:
             from services.evo_features import load_feature_schema
+            from services.evo_runtime import get_evo_runtime
 
             self._evo = get_evo_runtime()
             self._evo_schema = load_feature_schema()
+        if self.use_evo13:
+            from services.evo_features import load_feature_schema
+            from services.evo_runtime import get_evo13_runtime
+
+            self._evo13 = get_evo13_runtime()
+            self._evo_schema = load_feature_schema(settings.EVO13_MODEL_VERSION)
+            if not self._evo_schema:
+                self._evo_schema = load_feature_schema(settings.EVO_MODEL_VERSION)
 
     def _load_records(self) -> list[dict[str, Any]]:
         if not self.reference_path.exists():
@@ -58,6 +80,8 @@ class EvacuationPredictor:
 
         with self.reference_path.open(encoding="utf-8") as handle:
             data = json.load(handle)
+        if isinstance(data, dict):
+            data = data.get("rows", [])
 
         cleaned: list[dict[str, Any]] = []
         for row in data:
@@ -70,6 +94,7 @@ class EvacuationPredictor:
                         "category": row.get("Category", ""),
                         "density": float(row.get("Density (#)", 0) or 0),
                         "evacuation_success_pct": float(row.get("Evacuation Success (%)", 0) or 0),
+                        "data_origin": row.get("data_origin", "fcusd_reference"),
                     }
                 )
             except (TypeError, ValueError):
@@ -93,6 +118,20 @@ class EvacuationPredictor:
         scenario = scenario or SCENARIO_BY_EVENT.get(event_type, "Standard Evacuation Drill")
         category = CATEGORY_ALIASES.get(category.lower(), category)
         hazard = hazard or {}
+
+        if self.use_evo13:
+            return self._predict_evo13_research(
+                spot_id=spot_id,
+                name=name,
+                category=category,
+                occupancy=occupancy,
+                density=density,
+                event_type=event_type,
+                scenario=scenario,
+                lat=lat,
+                lon=lon,
+                hazard=hazard,
+            )
 
         knn = self._predict_knn(
             spot_id=spot_id,
@@ -156,6 +195,93 @@ class EvacuationPredictor:
         })
         return result
 
+    def _predict_evo13_research(
+        self,
+        *,
+        spot_id: str,
+        name: str,
+        category: str,
+        occupancy: int,
+        density: float,
+        event_type: str,
+        scenario: str,
+        lat: Optional[float],
+        lon: Optional[float],
+        hazard: dict[str, Any],
+    ) -> dict[str, Any]:
+        knn = self._predict_knn(
+            spot_id=spot_id,
+            name=name,
+            category=category,
+            occupancy=occupancy,
+            density=density,
+            event_type=event_type,
+            scenario=scenario,
+            lat=lat,
+            lon=lon,
+            k=35,
+            model_label="evo1.3_research_knn",
+        )
+
+        severity = float(hazard.get("severity_score") or 0.0)
+        distance_km = float(hazard.get("hazard_distance_km") or 250.0)
+        proximity = max(0.0, 1.0 - min(distance_km, 250.0) / 250.0)
+        hazard_pressure = proximity * min(severity, 1.0)
+
+        success = float(knn["predicted_evacuation_success_pct"]) - hazard_pressure * 4.5
+        evac_time = float(knn["predicted_evacuation_time_min"]) + hazard_pressure * 3.0
+        model_name = "evo1.3_research"
+        inference_mode = "internet_enriched_knn"
+        evo_source = None
+
+        if self._evo13 and self._evo13.is_available:
+            evo_out = self._predict_evo(
+                occupancy=occupancy,
+                density=density,
+                category=category,
+                scenario=scenario,
+                event_type=str(hazard.get("event_type") or event_type),
+                hazard=hazard,
+                runtime=self._evo13,
+            )
+            if evo_out:
+                model_name = settings.EVO13_MODEL_VERSION
+                inference_mode = "internet_enriched_evo13"
+                evo_source = "evo13_artifacts"
+                success = (success * 0.45) + (evo_out["predicted_evacuation_success_pct"] * 0.55)
+                evac_time = (evac_time * 0.35) + (evo_out["predicted_evacuation_time_min"] * 0.65)
+
+        success = max(75.0, min(99.5, success))
+        evac_time = max(3.0, min(25.0, evac_time))
+        evac_rate = max(0.0, min(1.0, success / 100.0))
+        risk = self._risk_band(evac_rate, density, occupancy)
+        confidence = 0.58 if evo_source else 0.52
+
+        return {
+            **knn,
+            "spot_id": spot_id,
+            "name": name,
+            "category": category,
+            "lat": lat,
+            "lon": lon,
+            "event_type": event_type,
+            "scenario": scenario,
+            "inputs": {"occupancy": occupancy, "density": density},
+            "predicted_evacuation_success_pct": round(success, 2),
+            "predicted_evacuation_rate": round(evac_rate, 4),
+            "predicted_evacuation_time_min": round(evac_time, 2),
+            "risk_level": risk,
+            "confidence": confidence,
+            "model": model_name,
+            "inference_mode": inference_mode,
+            "research_preview": True,
+            "production_approved": False,
+            "accuracy_notice": "Research estimate — not validated by FCUSD drill data",
+            "reference_rows": len(self.records),
+            "hazard_pressure": round(hazard_pressure, 3),
+            "evo_source": evo_source,
+        }
+
     def _predict_knn(
         self,
         *,
@@ -168,13 +294,15 @@ class EvacuationPredictor:
         scenario: str,
         lat: Optional[float],
         lon: Optional[float],
+        k: int = 25,
+        model_label: str = "knn_reference_dataset",
     ) -> dict[str, Any]:
         neighbors = self._nearest_neighbors(
             occupancy=occupancy,
             density=density,
             category=category,
             scenario=scenario,
-            k=25,
+            k=k,
         )
 
         if not neighbors:
@@ -215,7 +343,7 @@ class EvacuationPredictor:
             "risk_level": risk,
             "confidence": round(min(0.95, 0.55 + len(neighbors) / 50), 2),
             "reference_samples": len(neighbors),
-            "model": "knn_reference_dataset",
+            "model": model_label,
         }
 
     def predict_for_alert(
@@ -267,10 +395,14 @@ class EvacuationPredictor:
         scenario: str,
         event_type: str,
         hazard: Optional[dict[str, Any]] = None,
+        runtime: Any = None,
     ) -> Optional[dict[str, Any]]:
         from services.evo_features import encode_features
 
         hazard = hazard or {}
+        evo = runtime or self._evo
+        if not evo:
+            return None
         if self._evo_schema:
             features = encode_features(
                 schema=self._evo_schema,
@@ -299,13 +431,14 @@ class EvacuationPredictor:
         if not features:
             return None
 
-        out = self._evo.predict(features)
+        out = evo.predict(features)
         if not out:
             return None
         success = out["evacuation_success_pct"]
         evac_time = out["evacuation_time_min"]
         evac_rate = max(0.0, min(1.0, success / 100.0))
         risk = self._risk_band(evac_rate, density, occupancy)
+        model_version = getattr(evo, "model_version", settings.EVO_MODEL_VERSION)
         return {
             "predicted_evacuation_success_pct": round(success, 2),
             "predicted_evacuation_rate": round(evac_rate, 4),
@@ -313,7 +446,7 @@ class EvacuationPredictor:
             "risk_level": risk,
             "confidence": 0.88,
             "reference_samples": 0,
-            "model": settings.EVO_MODEL_VERSION,
+            "model": model_version,
         }
 
     @staticmethod

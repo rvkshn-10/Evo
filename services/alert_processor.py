@@ -25,13 +25,14 @@ LOCATIONS_PATH = Path(__file__).resolve().parents[1] / "config" / "monitoring_lo
 class AlertProcessor:
     """Orchestrates ingestion and enrichment for the public dashboard."""
 
-    def __init__(self, *, use_evo: bool = False):
+    def __init__(self, *, use_evo: bool = False, use_evo13: bool = False):
         self.noaa = NOAAClient()
         self.usgs = USGSClient()
         self.gdacs = GDACSClient()
         self.firms = NASAFIRMSClient()
         self.peoplesense = PeopleSenseClient()
-        self.predictor = EvacuationPredictor(use_evo=use_evo)
+        self.predictor = EvacuationPredictor(use_evo=use_evo, use_evo13=use_evo13)
+        self.use_evo13 = use_evo13
         self.locations = self._load_locations()
 
     def _load_locations(self) -> list[dict[str, Any]]:
@@ -126,6 +127,13 @@ class AlertProcessor:
                     if spot.get("risk_level") == "high"
                 ),
             },
+            "prediction_policy": (
+                "evo1.3_research"
+                if self.use_evo13
+                else "evo1.2_hybrid"
+                if self.predictor.use_evo
+                else "knn_reference"
+            ),
         }
 
     def enrich_alert(

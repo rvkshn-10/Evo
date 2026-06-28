@@ -14,7 +14,7 @@ from services.pipeline_status import get_pipeline_status
 
 logger = logging.getLogger(__name__)
 
-RunMode = Literal["sync", "external_ai", "evo", "broadcast"]
+RunMode = Literal["sync", "external_ai", "evo", "evo13", "broadcast"]
 
 
 async def execute_run_mode(
@@ -26,7 +26,7 @@ async def execute_run_mode(
     tracker = get_pipeline_status()
 
     feed_sync = GovernmentFeedSync()
-    processor = AlertProcessor(use_evo=(mode == "evo"))
+    processor = AlertProcessor(use_evo=(mode == "evo"), use_evo13=(mode == "evo13"))
 
     if mode == "broadcast":
         return await run_full_agent_cycle(area)

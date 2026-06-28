@@ -1,0 +1,27 @@
+{
+  "raw_rows": 4082,
+  "unique_rows": 2041,
+  "exact_duplicate_rows_removed": 2041,
+  "missing_density_rows": 31,
+  "missing_success_target_rows": 41,
+  "category_counts_unique": {
+    "Office Building": 31,
+    "Stadium": 10,
+    "Train Station": 2000
+  },
+  "scenario_counts_unique_normalized": {
+    "Blockage": 3,
+    "Electrical Fire": 350,
+    "Panic Chain Reaction": 334,
+    "Platform Fire": 325,
+    "Standard Evacuation Drill": 36,
+    "Station Flooding": 312,
+    "Sudden Overcrowding": 340,
+    "Tunnel Smoke": 341
+  },
+  "limitations": [
+    "Office Building rows have no density or success target; density is imputed and only time loss is used.",
+    "Stadium rows have no success target; only time loss is used.",
+    "Severity and hazard magnitude are absent from the reference data, so Evo 1.0 is trained to treat them as neutral inputs."
+  ]
+}

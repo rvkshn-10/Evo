@@ -1,0 +1,41 @@
+{
+  "raw_rows": 4082,
+  "unique_rows": 2041,
+  "exact_duplicate_rows_removed": 2041,
+  "missing_density_rows": 31,
+  "missing_success_target_rows": 41,
+  "category_counts_unique": {
+    "Office Building": 31,
+    "Stadium": 10,
+    "Train Station": 2000
+  },
+  "scenario_counts_unique_normalized": {
+    "Blockage": 3,
+    "Electrical Fire": 350,
+    "Panic Chain Reaction": 334,
+    "Platform Fire": 325,
+    "Standard Evacuation Drill": 36,
+    "Station Flooding": 312,
+    "Sudden Overcrowding": 340,
+    "Tunnel Smoke": 341
+  },
+  "raw_train_station_success": {
+    "mean": 96.565555,
+    "std": 2.041743678966657,
+    "min": 90.32,
+    "max": 102.56,
+    "feature_correlations": {
+      "occupancy": 0.013562770218240105,
+      "density": -0.022146890229830775,
+      "evacuation_time_min": -0.030030297266557673
+    }
+  },
+  "cv_warning": "Blockage has only three unique groups, so five-fold grouped stratification cannot place that scenario in every fold. Synthetic variants remain grouped to prevent leakage.",
+  "augmented_rows": 9412,
+  "severity_variants": [
+    0.0,
+    0.3,
+    0.6,
+    0.9
+  ]
+}

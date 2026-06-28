@@ -1,0 +1,222 @@
+[
+  {
+    "Scenario": "Standard Evacuation Drill",
+    "Occupancy (#)": 450,
+    "Evacuation Time (Min)": 8.2,
+    "Category": "Office Building",
+    "Density (#)": 0.38,
+    "Evacuation Success (%)": 96.8,
+    "source_sheet": "NIST NCSTAR 1-7",
+    "data_origin": "public_study",
+    "citation": "NIST NCSTAR 1-7 — WTC evacuation survey (office egress times)"
+  },
+  {
+    "Scenario": "Electrical Fire",
+    "Occupancy (#)": 820,
+    "Evacuation Time (Min)": 9.5,
+    "Category": "Office Building",
+    "Density (#)": 0.52,
+    "Evacuation Success (%)": 94.2,
+    "source_sheet": "NIST NCSTAR 1-7",
+    "data_origin": "public_study",
+    "citation": "NIST NCSTAR 1-7 — high-rise office fire evacuation"
+  },
+  {
+    "Scenario": "Panic Chain Reaction",
+    "Occupancy (#)": 1200,
+    "Evacuation Time (Min)": 11.3,
+    "Category": "Office Building",
+    "Density (#)": 0.61,
+    "Evacuation Success (%)": 91.5,
+    "source_sheet": "NIST TN 1822",
+    "data_origin": "public_study",
+    "citation": "NIST TN 1822 — occupant evacuation modeling under stress"
+  },
+  {
+    "Scenario": "Standard Evacuation Drill",
+    "Occupancy (#)": 180,
+    "Evacuation Time (Min)": 4.8,
+    "Category": "Office Building",
+    "Density (#)": 0.28,
+    "Evacuation Success (%)": 98.4,
+    "source_sheet": "NIST school egress guide",
+    "data_origin": "public_study",
+    "citation": "NIST school fire safety — classroom batch evacuation"
+  },
+  {
+    "Scenario": "Sudden Overcrowding",
+    "Occupancy (#)": 2100,
+    "Evacuation Time (Min)": 12.6,
+    "Category": "Office Building",
+    "Density (#)": 0.72,
+    "Evacuation Success (%)": 89.8,
+    "source_sheet": "NIST TN 1822",
+    "data_origin": "public_study",
+    "citation": "NIST TN 1822 — congested stairwell flow reduction"
+  },
+  {
+    "Scenario": "Standard Evacuation Drill",
+    "Occupancy (#)": 650,
+    "Evacuation Time (Min)": 7.1,
+    "Category": "Office Building",
+    "Density (#)": 0.41,
+    "Evacuation Success (%)": 97.1,
+    "source_sheet": "NFPA 101",
+    "data_origin": "public_study",
+    "citation": "NFPA 101 — business occupancy egress time targets"
+  },
+  {
+    "Scenario": "Electrical Fire",
+    "Occupancy (#)": 340,
+    "Evacuation Time (Min)": 6.2,
+    "Category": "Office Building",
+    "Density (#)": 0.33,
+    "Evacuation Success (%)": 95.9,
+    "source_sheet": "NFPA 101",
+    "data_origin": "public_study",
+    "citation": "NFPA 101 — educational occupant load factors"
+  },
+  {
+    "Scenario": "Platform Fire",
+    "Occupancy (#)": 890,
+    "Evacuation Time (Min)": 7.8,
+    "Category": "Train Station",
+    "Density (#)": 0.48,
+    "Evacuation Success (%)": 93.6,
+    "source_sheet": "Transit evac study",
+    "data_origin": "public_study",
+    "citation": "Public transit station evacuation — platform to street (literature median)"
+  },
+  {
+    "Scenario": "Tunnel Smoke",
+    "Occupancy (#)": 1100,
+    "Evacuation Time (Min)": 9.2,
+    "Category": "Train Station",
+    "Density (#)": 0.55,
+    "Evacuation Success (%)": 90.4,
+    "source_sheet": "Transit evac study",
+    "data_origin": "public_study",
+    "citation": "Rail tunnel smoke evacuation case studies (aggregated)"
+  },
+  {
+    "Scenario": "Station Flooding",
+    "Occupancy (#)": 560,
+    "Evacuation Time (Min)": 8.4,
+    "Category": "Train Station",
+    "Density (#)": 0.36,
+    "Evacuation Success (%)": 92.8,
+    "source_sheet": "Transit evac study",
+    "data_origin": "public_study",
+    "citation": "Transit hub flood egress — alternate route timing"
+  },
+  {
+    "Scenario": "Panic Chain Reaction",
+    "Occupancy (#)": 2400,
+    "Evacuation Time (Min)": 14.2,
+    "Category": "Train Station",
+    "Density (#)": 0.78,
+    "Evacuation Success (%)": 87.5,
+    "source_sheet": "Fruin LOS",
+    "data_origin": "public_study",
+    "citation": "Fruin pedestrian level-of-service — crush density delay"
+  },
+  {
+    "Scenario": "Standard Evacuation Drill",
+    "Occupancy (#)": 5200,
+    "Evacuation Time (Min)": 18.5,
+    "Category": "Stadium",
+    "Density (#)": 0.68,
+    "Evacuation Success (%)": 88.2,
+    "source_sheet": "Fruin LOS",
+    "data_origin": "public_study",
+    "citation": "Stadium bowl egress — Fruin density / flow models"
+  },
+  {
+    "Scenario": "Sudden Overcrowding",
+    "Occupancy (#)": 3800,
+    "Evacuation Time (Min)": 16.1,
+    "Category": "Stadium",
+    "Density (#)": 0.74,
+    "Evacuation Success (%)": 86.4,
+    "source_sheet": "NFPA 101 assembly",
+    "data_origin": "public_study",
+    "citation": "NFPA 101 — assembly occupancy exit capacity"
+  },
+  {
+    "Scenario": "Electrical Fire",
+    "Occupancy (#)": 1500,
+    "Evacuation Time (Min)": 10.8,
+    "Category": "Stadium",
+    "Density (#)": 0.58,
+    "Evacuation Success (%)": 90.1,
+    "source_sheet": "NFPA 101 assembly",
+    "data_origin": "public_study",
+    "citation": "NFPA 101 — large venue emergency egress planning"
+  },
+  {
+    "Scenario": "Standard Evacuation Drill",
+    "Occupancy (#)": 1750,
+    "Evacuation Time (Min)": 9.4,
+    "Category": "Office Building",
+    "Density (#)": 0.44,
+    "Evacuation Success (%)": 96.2,
+    "source_sheet": "NIST RF 1663",
+    "data_origin": "public_study",
+    "citation": "NIST RF 1663 — stairwell effective width and pre-movement"
+  },
+  {
+    "Scenario": "Platform Fire",
+    "Occupancy (#)": 420,
+    "Evacuation Time (Min)": 5.9,
+    "Category": "Train Station",
+    "Density (#)": 0.31,
+    "Evacuation Success (%)": 97.3,
+    "source_sheet": "Transit evac study",
+    "data_origin": "public_study",
+    "citation": "Low-occupancy transit platform — off-peak drill timing"
+  },
+  {
+    "Scenario": "Standard Evacuation Drill",
+    "Occupancy (#)": 950,
+    "Evacuation Time (Min)": 8.8,
+    "Category": "Office Building",
+    "Density (#)": 0.47,
+    "Evacuation Success (%)": 95.5,
+    "source_sheet": "NIST school egress guide",
+    "data_origin": "public_study",
+    "citation": "NIST — multi-wing school evacuation sequencing"
+  },
+  {
+    "Scenario": "Panic Chain Reaction",
+    "Occupancy (#)": 680,
+    "Evacuation Time (Min)": 7.6,
+    "Category": "Train Station",
+    "Density (#)": 0.49,
+    "Evacuation Success (%)": 92.1,
+    "source_sheet": "King's Cross lessons",
+    "data_origin": "public_study",
+    "citation": "King's Cross underground fire — crowd behavior delays"
+  },
+  {
+    "Scenario": "Electrical Fire",
+    "Occupancy (#)": 2200,
+    "Evacuation Time (Min)": 13.4,
+    "Category": "Office Building",
+    "Density (#)": 0.66,
+    "Evacuation Success (%)": 90.8,
+    "source_sheet": "NIST TN 1822",
+    "data_origin": "public_study",
+    "citation": "NIST TN 1822 — merged flow at exits under alarm"
+  },
+  {
+    "Scenario": "Standard Evacuation Drill",
+    "Occupancy (#)": 280,
+    "Evacuation Time (Min)": 5.2,
+    "Category": "Office Building",
+    "Density (#)": 0.25,
+    "Evacuation Success (%)": 98.9,
+    "source_sheet": "NFPA 101",
+    "data_origin": "public_study",
+    "citation": "NFPA 101 — small educational wing evacuation"
+  }
+]

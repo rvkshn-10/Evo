@@ -7,12 +7,26 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from config.settings import settings
 from services.agent_runner import run_full_agent_cycle, run_full_agent_cycle_sync
 from services.alert_processor import AlertProcessor
-from services.disaster_history import get_recent_history, is_configured as neon_configured
+from services.disaster_history import (
+    build_csv_zip_export,
+    build_json_export,
+    copy_sqlite_export,
+    count_snapshots,
+    get_history_timeseries,
+    get_recent_history,
+    get_storage_info,
+    parse_range_params,
+    postgres_configured,
+    query_high_risk_predictions,
+    storage_backend,
+)
+from services.evo_live_flow import build_live_flow
 from services.evo_runtime import get_evo_runtime
 from services.pipeline_status import get_pipeline_status
 from services.run_modes import RunMode, execute_run_mode_sync
@@ -239,23 +253,122 @@ def get_dashboard(
     lat: Optional[float] = Query(default=None),
     lon: Optional[float] = Query(default=None),
     use_evo: bool = Query(default=False),
+    use_evo13: bool = Query(default=False),
 ):
     point = (lat, lon) if lat is not None and lon is not None else None
-    processor = AlertProcessor(use_evo=use_evo) if use_evo else _processor
+    if use_evo13:
+        processor = AlertProcessor(use_evo13=True)
+    elif use_evo:
+        processor = AlertProcessor(use_evo=True)
+    else:
+        processor = _processor
     return processor.get_dashboard_snapshot(area=area, point=point)
 
 
 @router.get("/history")
 async def get_disaster_history(limit: int = Query(default=20, ge=1, le=100)):
+    storage = get_storage_info()
     return {
-        "neon_configured": neon_configured(),
+        "storage": storage,
+        "neon_configured": postgres_configured(),
+        "total_snapshots": count_snapshots(),
         "snapshots": get_recent_history(limit=limit),
     }
+
+
+@router.get("/history/timeseries")
+async def get_history_timeseries_route(
+    since: Optional[str] = Query(default=None),
+    until: Optional[str] = Query(default=None),
+):
+    since_dt, until_dt = parse_range_params(since, until)
+    return {
+        "storage": get_storage_info(),
+        "range": {"since": since, "until": until},
+        "points": get_history_timeseries(since=since_dt, until=until_dt),
+        "count": count_snapshots(since=since_dt, until=until_dt),
+    }
+
+
+@router.get("/history/high-risk")
+async def get_high_risk_history(
+    since: Optional[str] = Query(default=None),
+    until: Optional[str] = Query(default=None),
+    risk_level: str = Query(default="high", description="high, medium, high,medium, or all"),
+    limit: int = Query(default=200, ge=1, le=5000),
+):
+    since_dt, until_dt = parse_range_params(since, until)
+    rows = query_high_risk_predictions(
+        since=since_dt,
+        until=until_dt,
+        risk_level=risk_level,
+        limit=limit,
+    )
+    return {
+        "storage": get_storage_info(),
+        "range": {"since": since, "until": until},
+        "risk_level": risk_level,
+        "count": len(rows),
+        "predictions": rows,
+    }
+
+
+@router.get("/history/export")
+async def export_disaster_history(
+    format: str = Query(default="json", pattern="^(json|csv|sqlite)$"),
+    since: Optional[str] = Query(default=None),
+    until: Optional[str] = Query(default=None),
+):
+    since_dt, until_dt = parse_range_params(since, until)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+    if format == "json":
+        payload = build_json_export(since=since_dt, until=until_dt)
+        return Response(
+            content=payload,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="fcusd_history_{stamp}.json"'},
+        )
+
+    if format == "csv":
+        payload = build_csv_zip_export(since=since_dt, until=until_dt)
+        return Response(
+            content=payload,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="fcusd_history_{stamp}.zip"'},
+        )
+
+    if storage_backend() != "sqlite":
+        raise HTTPException(
+            status_code=400,
+            detail="SQLite file export is only available with local SQLite storage. Use format=json or format=csv, or export from Neon.",
+        )
+
+    db_copy = copy_sqlite_export()
+    try:
+        data = db_copy.read_bytes()
+    finally:
+        db_copy.unlink(missing_ok=True)
+
+    return Response(
+        content=data,
+        media_type="application/x-sqlite3",
+        headers={"Content-Disposition": f'attachment; filename="fcusd_disaster_history_{stamp}.db"'},
+    )
 
 
 @router.get("/evo/visualization")
 async def get_evo_visualization():
     return get_evo_runtime().get_visualization()
+
+
+@router.get("/evo/live-flow")
+async def get_evo_live_flow(
+    use_evo: bool = Query(default=True),
+    spot_id: Optional[str] = Query(default=None),
+):
+    """Live inference trace for the interactive Evo network visualization."""
+    return build_live_flow(use_evo=use_evo, spot_id=spot_id)
 
 
 @router.get("/evo/runtime")
@@ -407,7 +520,7 @@ async def run_evacuation_agent(
 @router.post("/alerts/sync")
 async def sync_alerts(
     background_tasks: BackgroundTasks,
-    mode: RunMode = Query(default="sync", description="sync | external_ai | evo | broadcast"),
+    mode: RunMode = Query(default="sync", description="sync | external_ai | evo | evo13 | broadcast"),
 ):
     """Sync feeds and optionally run AI/broadcast depending on mode."""
     area = settings.DEFAULT_ALERT_AREA
@@ -426,7 +539,8 @@ async def sync_alerts(
     messages = {
         "sync": "Sync only — NOAA/USGS/FEMA + predictions (no LLM)",
         "external_ai": "Sync + Gemini/OpenAI summary with auto-failover",
-        "evo": "Sync + Evo 1.2 hybrid predictions (ONNX/OpenVINO)",
+        "evo": "Sync + Evo 1.2 hybrid predictions (ONNX/OpenVINO) — production",
+        "evo13": "Sync + Evo 1.3 research (internet + enriched reference) — not production",
         "broadcast": "Full 7-step broadcast pipeline",
     }
     return {

@@ -1,0 +1,116 @@
+{
+  "model_version": "evo1.1",
+  "input_name": "features",
+  "input_dtype": "float32",
+  "numeric_features": [
+    "occupancy_log_scaled",
+    "density",
+    "severity_score",
+    "hazard_magnitude",
+    "occupancy_density_interaction_scaled",
+    "capacity_utilization_scaled"
+  ],
+  "categorical_features": {
+    "category": [
+      "Train Station",
+      "Office Building",
+      "Stadium"
+    ],
+    "scenario": [
+      "Electrical Fire",
+      "Tunnel Smoke",
+      "Sudden Overcrowding",
+      "Panic Chain Reaction",
+      "Platform Fire",
+      "Station Flooding",
+      "Standard Evacuation Drill",
+      "Blockage"
+    ],
+    "event_type": [
+      "fire",
+      "flood",
+      "earthquake",
+      "tornado",
+      "tsunami",
+      "other"
+    ]
+  },
+  "feature_order": [
+    "occupancy_log_scaled",
+    "density",
+    "severity_score",
+    "hazard_magnitude",
+    "occupancy_density_interaction_scaled",
+    "capacity_utilization_scaled",
+    "category=Train Station",
+    "category=Office Building",
+    "category=Stadium",
+    "scenario=Electrical Fire",
+    "scenario=Tunnel Smoke",
+    "scenario=Sudden Overcrowding",
+    "scenario=Panic Chain Reaction",
+    "scenario=Platform Fire",
+    "scenario=Station Flooding",
+    "scenario=Standard Evacuation Drill",
+    "scenario=Blockage",
+    "event_type=fire",
+    "event_type=flood",
+    "event_type=earthquake",
+    "event_type=tornado",
+    "event_type=tsunami",
+    "event_type=other"
+  ],
+  "normalization": {
+    "engineered_features": [
+      "occupancy_log",
+      "occupancy_log_x_density",
+      "capacity_utilization"
+    ],
+    "means": [
+      6.695344821156706,
+      3.6774240121232187,
+      0.5099857723577255
+    ],
+    "scales": [
+      0.8627986572273878,
+      1.8414219703218087,
+      0.2823637025302658
+    ],
+    "density_missing_value": 0.54,
+    "category_capacity": {
+      "Train Station": 2000.0,
+      "Office Building": 1000.0,
+      "Stadium": 60000.0
+    }
+  },
+  "synthetic_hazard_rule": {
+    "severity_variants": [
+      0.0,
+      0.3,
+      0.6,
+      0.9
+    ],
+    "success_adjustment": "clip(original_success_pct - severity_score * 3, 0, 100)",
+    "variants_grouped_during_cv": true
+  },
+  "scenario_by_event": {
+    "fire": "Electrical Fire",
+    "flood": "Station Flooding",
+    "earthquake": "Panic Chain Reaction",
+    "tsunami": "Station Flooding",
+    "tornado": "Sudden Overcrowding",
+    "other": "Standard Evacuation Drill"
+  },
+  "outputs": [
+    "evacuation_success_pct",
+    "evacuation_time_min"
+  ],
+  "derived_outputs": {
+    "evacuation_rate": "clip(evacuation_success_pct / 100, 0, 1)",
+    "risk_level": {
+      "high": "evacuation_rate < 0.85 or density > 0.7",
+      "medium": "evacuation_rate < 0.92",
+      "low": "otherwise"
+    }
+  }
+}

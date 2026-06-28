@@ -56,6 +56,7 @@ async function fetchDashboard() {
   const mode = document.getElementById("runModeSelect")?.value || "sync";
   const params = new URLSearchParams();
   if (mode === "evo") params.set("use_evo", "true");
+  if (mode === "evo13") params.set("use_evo13", "true");
   const query = params.toString();
   const path = query ? `/api/dashboard?${query}` : "/api/dashboard";
 
@@ -99,10 +100,40 @@ function showToast(title, message, type = "info") {
   toast.innerHTML = `<strong>${title}</strong><p>${message}</p>`;
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 8000);
+}
 
-  if (notificationsEnabled && Notification.permission === "granted") {
-    new Notification(title, { body: message });
+function pushDeviceNotification(title, message, options = {}) {
+  if (!notificationsEnabled || Notification.permission !== "granted") return false;
+  try {
+    new Notification(title, {
+      body: message,
+      tag: options.tag || "emergency-agent-run",
+      icon: options.icon,
+    });
+    return true;
+  } catch (error) {
+    console.warn("Device notification failed", error);
+    return false;
   }
+}
+
+/** Agent run alerts: device push when Notify is on, otherwise in-page toast. */
+function notifyAgentEvent(title, message, type = "info") {
+  if (pushDeviceNotification(title, message)) return;
+  showToast(title, message, type);
+}
+
+function summarizeAgentSnapshot(snapshot) {
+  const alerts = (snapshot.alerts || []).length + (snapshot.earthquakes || []).length;
+  const risk = snapshot.summary?.high_risk_spots ?? 0;
+  const ps =
+    snapshot.peoplesense_mode === "live"
+      ? snapshot.peoplesense_source === "get_api"
+        ? "PeopleSense live"
+        : "PeopleSense live"
+      : "PeopleSense simulated";
+  const mode = document.getElementById("runModeSelect")?.value || "sync";
+  return `${alerts} hazards · ${risk} high-risk spots · ${ps} · mode: ${mode}`;
 }
 
 async function enableNotifications() {
@@ -114,18 +145,67 @@ async function enableNotifications() {
   notificationsEnabled = permission === "granted";
   document.getElementById("notifyBtn").textContent = notificationsEnabled ? "🔔 On" : "🔔 Off";
   if (notificationsEnabled) {
-    showToast("Notifications enabled", "You will be alerted for significant hazards.", "ok");
+    showToast(
+      "Device notifications on",
+      "Run Agent will alert this device when the pipeline finishes.",
+      "ok",
+    );
   }
 }
 
 function isEvoRunMode() {
+  const mode = document.getElementById("runModeSelect")?.value;
+  return mode === "evo" || mode === "evo13";
+}
+
+function isEvo12RunMode() {
   return document.getElementById("runModeSelect")?.value === "evo";
+}
+
+function isEvo13RunMode() {
+  return document.getElementById("runModeSelect")?.value === "evo13";
+}
+
+function isExternalAiMode() {
+  return document.getElementById("runModeSelect")?.value === "external_ai";
+}
+
+function updateExternalAiWarning() {
+  updateRunModeBanners();
+}
+
+function updateRunModeBanners() {
+  const external = document.getElementById("externalAiWarning");
+  const evo = document.getElementById("evoLocalNote");
+  const evo13 = document.getElementById("evo13ResearchWarning");
+  if (external) external.classList.toggle("hidden", !isExternalAiMode());
+  if (evo) evo.classList.toggle("hidden", !isEvo12RunMode());
+  if (evo13) evo13.classList.toggle("hidden", !isEvo13RunMode());
+  if (isEvo12RunMode() && evo) {
+    import("./glossary.js").then(({ initGlossaryTooltips }) => initGlossaryTooltips(evo));
+  }
+}
+
+function warnEvo13Research({ onRun = false } = {}) {
+  if (!isEvo13RunMode()) return;
+  const title = onRun ? "Starting Evo 1.3 research run" : "Evo 1.3 research selected";
+  const message = onRun
+    ? "Predictions use internet hazard data and public studies — not FCUSD drill validation. May not be accurate."
+    : "Research-only mode. Estimates all sites from enriched reference + live hazards. Use Evo 1.2 hybrid for production.";
+  showToast(title, message, "warn");
+function warnExternalAiCredits({ onRun = false } = {}) {
+  if (!isExternalAiMode()) return;
+  const title = onRun ? "Starting External AI run" : "External AI selected";
+  const message = onRun
+    ? "This run will call Gemini (then OpenAI if needed). API credits apply — use Sync or Evo to avoid charges."
+    : "Each Run Agent in this mode uses Gemini/OpenAI. Credits will run out over time — use Sync or Evo for free updates.";
+  showToast(title, message, "warn");
 }
 
 function updateOpenvinoRowVisibility() {
   const row = document.getElementById("openvinoRow");
   if (!row) return;
-  row.classList.toggle("hidden", !isEvoRunMode());
+  row.classList.toggle("hidden", !isEvo12RunMode());
 }
 
 function setOpenvinoDot(state) {
@@ -172,7 +252,7 @@ function closeOpenvinoModal() {
 
 async function syncOpenvinoUi({ showGuideIfDisconnected = false } = {}) {
   updateOpenvinoRowVisibility();
-  if (!isEvoRunMode()) return;
+  if (!isEvo12RunMode()) return;
 
   const status = await fetchOpenvinoRuntime();
   const toggle = document.getElementById("openvinoToggle");
@@ -198,6 +278,18 @@ async function syncOpenvinoUi({ showGuideIfDisconnected = false } = {}) {
   }
 }
 
+async function onOpenvinoLabelClick() {
+  const status = await fetchOpenvinoRuntime();
+  if (status?.openvino_connected) {
+    setOpenvinoDot("connected");
+    const toggle = document.getElementById("openvinoToggle");
+    if (toggle) toggle.checked = true;
+  } else if (status?.backend === "onnxruntime") {
+    setOpenvinoDot("fallback");
+  }
+  openOpenvinoModal(status);
+}
+
 async function onOpenvinoToggleChange(event) {
   const checkbox = event.target;
   if (!checkbox.checked) return;
@@ -216,6 +308,7 @@ async function onOpenvinoToggleChange(event) {
 
 function initOpenvinoControls() {
   document.getElementById("openvinoToggle")?.addEventListener("change", onOpenvinoToggleChange);
+  document.getElementById("openvinoLabelText")?.addEventListener("click", onOpenvinoLabelClick);
   document.getElementById("openvinoModalClose")?.addEventListener("click", closeOpenvinoModal);
   document.getElementById("openvinoModalDismiss")?.addEventListener("click", closeOpenvinoModal);
   document.getElementById("openvinoModalBackdrop")?.addEventListener("click", closeOpenvinoModal);
@@ -292,13 +385,12 @@ function startPipelinePolling(onComplete) {
       if (status.status === "completed") {
         stopPipelinePolling();
         showPipelineProgress(false);
-        showToast("Pipeline complete", "Reports and broadcast files are ready.", "ok");
-        onComplete?.(status);
+        await onComplete?.(status);
       } else if (status.status === "failed") {
         stopPipelinePolling();
         showPipelineProgress(false);
-        showToast("Pipeline failed", status.error || "Unknown error", "warn");
-        onComplete?.(status);
+        notifyAgentEvent("Agent run failed", status.error || "Unknown error", "warn");
+        await onComplete?.(status);
       }
     } catch (error) {
       console.error(error);
@@ -526,18 +618,38 @@ function renderSnapshot(snapshot) {
   document.getElementById("alertCount").textContent = quakes.length + alerts.length;
   document.getElementById("quakeCount").textContent = quakes.length;
   document.getElementById("riskCount").textContent = snapshot.summary?.high_risk_spots ?? 0;
-  document.getElementById("modeBadge").textContent =
-    snapshot.peoplesense_mode === "live"
-      ? snapshot.peoplesense_source === "get_api"
+  document.getElementById("modeBadge").textContent = (() => {
+    const runMode = document.getElementById("runModeSelect")?.value || "sync";
+    if (runMode === "evo13" || snapshot.prediction_policy === "evo1.3_research") {
+      return "Evo 1.3 · Research";
+    }
+    if (runMode === "evo" || snapshot.prediction_policy === "evo1.2_hybrid") {
+      return "Evo 1.2 · Production";
+    }
+    if (snapshot.peoplesense_mode === "live") {
+      return snapshot.peoplesense_source === "get_api"
         ? "PeopleSense: Live (GET)"
-        : "PeopleSense: Live"
-      : "PeopleSense: Placeholder";
+        : "PeopleSense: Live";
+    }
+    return "PeopleSense: Placeholder";
+  })();
   document.getElementById("lastUpdated").textContent =
     `Last updated: ${new Date(snapshot.generated_at).toLocaleString()}`;
 
   renderAlerts(snapshot);
   renderPredictions(snapshot);
   renderMap(snapshot);
+}
+
+async function finishAgentRun(status) {
+  const snapshot = await fetchDashboard();
+  renderSnapshot(snapshot);
+  if (status?.status === "completed") {
+    notifyAgentEvent("Agent run complete", summarizeAgentSnapshot(snapshot), "ok");
+    const { refreshHistoryIfOpen } = await import("./history.js");
+    refreshHistoryIfOpen();
+  }
+  return snapshot;
 }
 
 async function refresh() {
@@ -547,16 +659,22 @@ async function refresh() {
 
   try {
     const mode = document.getElementById("runModeSelect")?.value || "sync";
+    if (mode === "external_ai") {
+      warnExternalAiCredits({ onRun: true });
+    }
+    if (mode === "evo13") {
+      warnEvo13Research({ onRun: true });
+    }
     const sync = await fetch(apiUrl(`/api/alerts/sync?mode=${encodeURIComponent(mode)}`), {
       method: "POST",
     });
     const info = await sync.json();
 
     if (info.status === "already_running") {
-      startPipelinePolling(async () => {
+      startPipelinePolling(async (status) => {
         button.disabled = false;
         button.textContent = "Run Agent";
-        renderSnapshot(await fetchDashboard());
+        await finishAgentRun(status);
       });
       return;
     }
@@ -570,10 +688,9 @@ async function refresh() {
     }
 
     button.textContent = "Pipeline running…";
-    showToast("Agent started", "Full emergency pipeline is running.", "info");
-    startPipelinePolling(async () => {
+    startPipelinePolling(async (status) => {
       try {
-        renderSnapshot(await fetchDashboard());
+        await finishAgentRun(status);
       } finally {
         button.disabled = false;
         button.textContent = "Run Agent";
@@ -606,7 +723,14 @@ export async function initApp() {
   document.getElementById("notifyBtn").addEventListener("click", enableNotifications);
   document.getElementById("runModeSelect")?.addEventListener("change", async () => {
     updateOpenvinoRowVisibility();
-    if (isEvoRunMode()) {
+    updateExternalAiWarning();
+    if (isExternalAiMode()) {
+      warnExternalAiCredits();
+    }
+    if (isEvo13RunMode()) {
+      warnEvo13Research();
+    }
+    if (isEvo12RunMode()) {
       await syncOpenvinoUi();
     }
     try {
@@ -618,6 +742,7 @@ export async function initApp() {
 
   initOpenvinoControls();
   updateOpenvinoRowVisibility();
+  updateExternalAiWarning();
 
   try {
     const [snapshot, pipelineStatus] = await Promise.all([
@@ -626,7 +751,7 @@ export async function initApp() {
     ]);
 
     renderSnapshot(snapshot);
-    if (isEvoRunMode()) {
+    if (isEvo12RunMode()) {
       await syncOpenvinoUi();
     }
 
@@ -646,10 +771,10 @@ export async function initApp() {
       const button = document.getElementById("refreshBtn");
       button.disabled = true;
       button.textContent = "Pipeline running…";
-      startPipelinePolling(async () => {
+      startPipelinePolling(async (status) => {
         button.disabled = false;
         button.textContent = "Run Agent";
-        renderSnapshot(await fetchDashboard());
+        await finishAgentRun(status);
       });
     }
   } catch (error) {

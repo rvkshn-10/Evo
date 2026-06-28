@@ -23,24 +23,56 @@
       <p class="subtitle">NOAA · USGS · GDACS · PeopleSense · Evo 1.2</p>
     </div>
     <div class="actions">
-      <button id="showEvoBtn" class="btn neo-btn" type="button" title="Open neural network visualization">
-        <span class="btn-icon">◈</span> Neural Network
+      <button id="historyBtn" class="btn neo-btn" type="button" title="Run history, charts, and export">
+        <span class="btn-icon">📊</span> History
+      </button>
+      <button id="showEvoBtn" class="btn neo-btn" type="button" title="Open model architecture and validation metrics">
+        <span class="btn-icon">◈</span> Model
       </button>
       <button id="notifyBtn" class="btn neo-btn" type="button" title="Enable desktop notifications">🔔 Notify</button>
-      <label class="run-mode-label neo-inset">
-        <span>Run mode</span>
-        <select id="runModeSelect" class="run-mode-select">
+      <div class="run-mode-picker neo-inset">
+        <span class="run-mode-picker-label">Run mode</span>
+        <select id="runModeSelect" class="run-mode-select-native" aria-label="Run mode">
           <option value="sync" selected>Sync only (default)</option>
           <option value="external_ai">External AI (Gemini → OpenAI)</option>
-          <option value="evo">Evo 1.2 (hybrid)</option>
+          <option value="evo">Evo 1.2 hybrid (production)</option>
+          <option value="evo13">Evo 1.3 (research)</option>
           <option value="broadcast">Full broadcast</option>
         </select>
-      </label>
-      <label id="openvinoRow" class="openvino-row neo-inset hidden" title="Use Intel OpenVINO for Evo inference">
-        <input type="checkbox" id="openvinoToggle" />
-        <span>OpenVINO connection</span>
+        <button
+          id="runModeTrigger"
+          class="run-mode-trigger"
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="runModeMenu"
+        >
+          Sync only (default)
+        </button>
+        <div id="runModeMenu" class="run-mode-menu hidden" role="listbox" aria-label="Run mode options">
+          <button type="button" class="run-mode-option glossary-term" data-mode="sync" data-glossary-key="run_mode_sync" role="option">Sync only (default)</button>
+          <button type="button" class="run-mode-option glossary-term" data-mode="external_ai" data-glossary-key="run_mode_external_ai" role="option">External AI (Gemini → OpenAI)</button>
+          <button type="button" class="run-mode-option glossary-term" data-mode="evo" data-glossary-key="run_mode_evo" role="option">Evo 1.2 hybrid (production)</button>
+          <button type="button" class="run-mode-option glossary-term" data-mode="evo13" data-glossary-key="run_mode_evo13" role="option">Evo 1.3 (research)</button>
+          <button type="button" class="run-mode-option glossary-term" data-mode="broadcast" data-glossary-key="run_mode_broadcast" role="option">Full broadcast</button>
+        </div>
+        <p class="run-mode-hover-hint">Hover each mode for details</p>
+      </div>
+      <p id="externalAiWarning" class="run-mode-banner external-ai-warning hidden" role="status">
+        External AI uses Gemini/OpenAI on every run — <strong>API credits will be consumed</strong>. Prefer Sync or Evo for free refreshes.
+      </p>
+      <p id="evoLocalNote" class="run-mode-banner evo-local-note hidden" role="status">
+        <strong>Production policy</strong> — Evo 1.2 hybrid runs locally (ONNX/OpenVINO). No Gemini, no OpenAI, no API credits.
+        <span class="glossary-term" data-glossary-key="evo1_3_blocked" tabindex="0">Why not Evo 1.3?</span>
+      </p>
+      <p id="evo13ResearchWarning" class="run-mode-banner evo13-research-warning hidden" role="status">
+        <strong>Research only — may not be accurate.</strong> Evo 1.3 uses internet hazard data and public NIST/NFPA/transit studies to estimate all sites. Not validated by FCUSD drills. Use <strong>Evo 1.2 hybrid</strong> for production.
+      </p>
+      <div id="openvinoRow" class="openvino-row neo-inset hidden" title="OpenVINO setup and connection status">
+        <input type="checkbox" id="openvinoToggle" aria-labelledby="openvinoLabelText" />
+        <button id="openvinoLabelText" class="openvino-label-btn" type="button">OpenVINO connection</button>
         <span id="openvinoStatusDot" class="openvino-dot" aria-hidden="true"></span>
-      </label>
+      </div>
       <button id="refreshBtn" class="btn neo-btn primary" type="button">Run Agent</button>
       <span id="connectionBadge" class="badge glass-pill">connecting…</span>
       <span id="modeBadge" class="badge glass-pill">loading…</span>
@@ -130,13 +162,13 @@
     </div>
   </div>
 
-  <!-- Evo neural network — shown only when user opens it -->
+  <!-- Evo model architecture — on demand -->
   <div id="evoModal" class="evo-modal hidden" role="dialog" aria-modal="true" aria-labelledby="evoModalTitle">
     <div class="evo-modal-backdrop" id="evoModalBackdrop"></div>
     <div class="evo-modal-content glass-panel neo-card">
       <header class="evo-modal-header">
         <div>
-          <h2 id="evoModalTitle">Evo 1.2 Neural Network</h2>
+          <h2 id="evoModalTitle">Evo 1.2 Live Inference</h2>
           <p id="evoStatus" class="subtitle">Loading model info…</p>
         </div>
         <button id="evoModalClose" class="btn neo-btn icon-btn" type="button" aria-label="Close">✕</button>
@@ -144,14 +176,23 @@
 
       <div class="evo-modal-body">
         <div class="evo-viz-wrap neo-inset">
-          <canvas id="evoNetworkCanvas" width="900" height="380"></canvas>
-          <p class="viz-caption">Dual-head architecture · MLP + gradient boosting · live hazard features</p>
+          <div class="evo-live-bar" id="evoLiveBar">
+            <span class="evo-live-pulse" aria-hidden="true"></span>
+            <span id="evoLiveStatus">Connecting to live inference…</span>
+          </div>
+          <div class="evo-viz-scroll" id="evoVizScroll">
+            <canvas id="evoNetworkCanvas" width="900" height="380" aria-label="Live Evo inference network"></canvas>
+            <div id="evoEdgeTooltip" class="evo-edge-tooltip hidden" role="tooltip"></div>
+          </div>
+          <p id="evoVizCaption" class="viz-caption">
+            Live inference · hover connections to inspect data flowing through the model
+          </p>
         </div>
 
         <div class="evo-charts-row">
           <div class="evo-chart-card neo-inset">
-            <h3>Training loss</h3>
-            <canvas id="evoLossCanvas" width="420" height="200"></canvas>
+            <h3 id="evoLossTitle">Cross-validation loss</h3>
+            <canvas id="evoLossCanvas" width="420" height="180"></canvas>
           </div>
           <div id="evoMetrics" class="evo-metrics neo-inset"></div>
         </div>
@@ -204,6 +245,69 @@ python3 scripts/test_openvino_local.py</pre>
           <button id="openvinoModalDismiss" class="btn neo-btn" type="button">Got it</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Run history, charts, and export -->
+  <div id="historyModal" class="evo-modal hidden" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+    <div class="evo-modal-backdrop" id="historyModalBackdrop"></div>
+    <div class="evo-modal-content glass-panel neo-card history-modal-content">
+      <header class="evo-modal-header">
+        <div>
+          <h2 id="historyModalTitle">Run History &amp; Export</h2>
+          <p id="historyStorageNote" class="subtitle">Loading storage info…</p>
+        </div>
+        <button id="historyModalClose" class="btn neo-btn icon-btn" type="button" aria-label="Close">✕</button>
+      </header>
+
+      <div class="history-toolbar neo-inset">
+        <label class="history-range-label">
+          <span>Date range</span>
+          <select id="historyRangeSelect" class="run-mode-select">
+            <option value="7d">Last 7 days</option>
+            <option value="30d" selected>Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="semester">Current semester</option>
+            <option value="all">All time</option>
+          </select>
+        </label>
+        <div class="history-export-actions">
+          <button id="exportJsonBtn" class="btn neo-btn" type="button">Export JSON</button>
+          <button id="exportCsvBtn" class="btn neo-btn" type="button">Export CSV (ZIP)</button>
+          <button id="exportSqliteBtn" class="btn neo-btn primary" type="button">Export SQLite DB</button>
+        </div>
+      </div>
+
+      <div class="evo-charts-row history-charts-row">
+        <div class="evo-chart-card neo-inset">
+          <h3>High-risk spots per run</h3>
+          <canvas id="historyRiskChart" width="420" height="180"></canvas>
+        </div>
+        <div class="evo-chart-card neo-inset">
+          <h3>Alerts &amp; earthquakes per run</h3>
+          <canvas id="historyAlertsChart" width="420" height="180"></canvas>
+        </div>
+      </div>
+
+      <section class="history-table-section">
+        <h3>High-risk predictions</h3>
+        <p class="sidebar-hint">Use exports for full SQL analysis — open the SQLite file in DB Browser or query Neon when configured.</p>
+        <div class="table-wrap neo-inset">
+          <table>
+            <thead>
+              <tr>
+                <th>Spot</th>
+                <th>Event</th>
+                <th>Occupancy</th>
+                <th>Evac rate</th>
+                <th>Risk</th>
+                <th>Recorded</th>
+              </tr>
+            </thead>
+            <tbody id="historyHighRiskBody"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
 

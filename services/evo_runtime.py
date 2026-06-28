@@ -165,6 +165,7 @@ def _placeholder_metrics() -> dict[str, Any]:
 
 
 _evo_runtime: Optional[EvoRuntime] = None
+_evo13_runtime: Optional[EvoRuntime] = None
 
 
 def get_evo_runtime() -> EvoRuntime:
@@ -172,3 +173,14 @@ def get_evo_runtime() -> EvoRuntime:
     if _evo_runtime is None:
         _evo_runtime = EvoRuntime()
     return _evo_runtime
+
+
+def get_evo13_runtime() -> EvoRuntime:
+    global _evo13_runtime
+    if _evo13_runtime is None:
+        version = settings.EVO13_MODEL_VERSION
+        _evo13_runtime = EvoRuntime(
+            model_dir=settings.PROJECT_ROOT / "models" / version,
+            model_version=version,
+        )
+    return _evo13_runtime
