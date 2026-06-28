@@ -35,7 +35,10 @@ class EvoRuntime:
         if not xml_path.exists():
             return False
         try:
-            from openvino.runtime import Core
+            try:
+                from openvino import Core
+            except ImportError:
+                from openvino.runtime import Core
 
             core = Core()
             self._compiled = core.compile_model(str(xml_path), "CPU")
@@ -74,12 +77,15 @@ class EvoRuntime:
         if not self.ensure_loaded():
             return None
         try:
+            import numpy as np
+
+            vector = np.asarray(features, dtype=np.float32).reshape(1, -1)
             if self._backend == "openvino":
-                result = self._compiled([features])[0]
-                outputs = list(result.values())[0][0]
+                result = self._compiled(vector)
+                outputs = np.asarray(list(result.values())[0])[0]
             else:
                 input_name = self._compiled.get_inputs()[0].name
-                outputs = self._compiled.run(None, {input_name: [features]})[0][0]
+                outputs = self._compiled.run(None, {input_name: vector})[0][0]
             return {
                 "evacuation_success_pct": float(outputs[0]),
                 "evacuation_time_min": float(outputs[1]),
@@ -87,6 +93,22 @@ class EvoRuntime:
         except Exception as exc:
             logger.error("Evo inference failed: %s", exc)
             return None
+
+    def get_runtime_status(self) -> dict[str, Any]:
+        """Probe load and report which inference backend is active."""
+        loaded = self.ensure_loaded()
+        return {
+            "model_version": self.model_version,
+            "available": self.is_available,
+            "loaded": loaded,
+            "backend": self._backend,
+            "openvino_connected": self._backend == "openvino",
+            "openvino_ir_present": (
+                self.model_dir / "openvino" / f"{self.model_version}.xml"
+            ).exists(),
+            "onnx_present": (self.model_dir / f"{self.model_version}.onnx").exists(),
+            "prefer_openvino": settings.EVO_PREFER_OPENVINO,
+        }
 
     def get_visualization(self) -> dict[str, Any]:
         arch_path = self.model_dir / "architecture.json"

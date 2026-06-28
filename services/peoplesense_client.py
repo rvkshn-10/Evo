@@ -24,13 +24,15 @@ class PeopleSenseClient:
     """
     PeopleSense FCUSD integration.
 
-    Read path (preferred, rate-limited ~1/min):
+    Read path (rate-limited ~1/min):
       GET {PEOPLESENSE_OCCUPANCY_URL}?filter=ALL
       Header: x-api-key: {PEOPLESENSE_API_KEY}
 
-    Write path (Pi edge / hazard events):
+    Write path (hazard events posted into PeopleSense):
       POST {PEOPLESENSE_EVENT_URL}
       Body: {"OccupancyXML": "<xml>...</xml>", "Message": "event text"}
+
+    Edge Pis push occupancy into PeopleSense; this client reads from PeopleSense.
     """
 
     def __init__(

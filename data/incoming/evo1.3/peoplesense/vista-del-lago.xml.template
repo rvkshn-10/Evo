@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<!-- Export from PeopleSense (OccupancyXML). Pis feed PeopleSense; training reads PeopleSense, not the Pi. -->
+<Occupancy generated_at="2026-07-01T18:00:00Z" source="peoplesense">
+  <Zone id="vista-del-lago" name="Vista del Lago High School" lat="38.6581" lon="-121.1412">
+    <Count>REPLACE_WITH_REAL_COUNT</Count>
+    <Density>REPLACE_WITH_REAL_DENSITY_0_TO_1</Density>
+    <Volatility>REPLACE_WITH_REAL_VOLATILITY</Volatility>
+  </Zone>
+</Occupancy>

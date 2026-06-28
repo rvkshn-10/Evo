@@ -1,0 +1,16 @@
+{
+  "rows": [
+    {
+      "spot_id": "vista-del-lago",
+      "outcome_timestamp": "2026-07-01T18:00:00Z",
+      "scenario": "Standard Evacuation Drill",
+      "category": "Office Building",
+      "evacuation_success_pct": 97.2,
+      "evacuation_time_min": 8.4,
+      "egress_exit_count": 6,
+      "egress_usable_width_m": 10.5,
+      "egress_route_length_m": 180.0,
+      "egress_blockage_fraction": 0.0
+    }
+  ]
+}

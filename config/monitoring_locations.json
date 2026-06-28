@@ -1,6 +1,6 @@
 {
   "region": "Sacramento / FCUSD",
-  "description": "FCUSD PeopleSense monitoring sites — Raspberry Pi edge devices report occupancy into PeopleSense; coords should match deployed Pi locations.",
+  "description": "FCUSD monitoring sites. Raspberry Pis (and other edge devices) push occupancy into the PeopleSense database; this app reads occupancy from PeopleSense (GET API), not directly from Pis.",
   "org": "FCUSD",
   "contact": "ravipothanngaari@gmail.com",
   "spots": [

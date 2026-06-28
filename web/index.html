@@ -36,6 +36,11 @@
           <option value="broadcast">Full broadcast</option>
         </select>
       </label>
+      <label id="openvinoRow" class="openvino-row neo-inset hidden" title="Use Intel OpenVINO for Evo inference">
+        <input type="checkbox" id="openvinoToggle" />
+        <span>OpenVINO connection</span>
+        <span id="openvinoStatusDot" class="openvino-dot" aria-hidden="true"></span>
+      </label>
       <button id="refreshBtn" class="btn neo-btn primary" type="button">Run Agent</button>
       <span id="connectionBadge" class="badge glass-pill">connecting…</span>
       <span id="modeBadge" class="badge glass-pill">loading…</span>
@@ -139,8 +144,8 @@
 
       <div class="evo-modal-body">
         <div class="evo-viz-wrap neo-inset">
-          <canvas id="evoNetworkCanvas" width="900" height="420"></canvas>
-          <p class="viz-caption">Dual-head MLP · live hazard features → success % &amp; evacuation time</p>
+          <canvas id="evoNetworkCanvas" width="900" height="380"></canvas>
+          <p class="viz-caption">Dual-head architecture · MLP + gradient boosting · live hazard features</p>
         </div>
 
         <div class="evo-charts-row">
@@ -149,6 +154,54 @@
             <canvas id="evoLossCanvas" width="420" height="200"></canvas>
           </div>
           <div id="evoMetrics" class="evo-metrics neo-inset"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OpenVINO setup guide — shown when Evo mode + checkbox and not connected -->
+  <div id="openvinoModal" class="evo-modal hidden" role="dialog" aria-modal="true" aria-labelledby="openvinoModalTitle">
+    <div class="evo-modal-backdrop" id="openvinoModalBackdrop"></div>
+    <div class="evo-modal-content glass-panel neo-card openvino-modal-content">
+      <header class="evo-modal-header">
+        <div>
+          <h2 id="openvinoModalTitle">Connect OpenVINO</h2>
+          <p id="openvinoModalSubtitle" class="subtitle">Evo runs locally on your machine — OpenVINO is optional but faster on Intel CPUs.</p>
+        </div>
+        <button id="openvinoModalClose" class="btn neo-btn icon-btn" type="button" aria-label="Close">✕</button>
+      </header>
+      <div class="openvino-modal-body">
+        <p id="openvinoModalStatus" class="openvino-current-status">Checking runtime…</p>
+        <ol class="openvino-steps">
+          <li>
+            <strong>Install OpenVINO</strong> (project root terminal):
+            <pre class="code-block">pip install openvino</pre>
+          </li>
+          <li>
+            <strong>Confirm model files exist</strong>:
+            <pre class="code-block">models/evo1.2/openvino/evo1.2.xml
+models/evo1.2/openvino/evo1.2.bin</pre>
+          </li>
+          <li>
+            <strong>Enable in <code>.env</code></strong>:
+            <pre class="code-block">EVO_PREFER_OPENVINO=true
+EVO_MODEL_VERSION=evo1.2</pre>
+          </li>
+          <li>
+            <strong>Restart the API</strong> and verify:
+            <pre class="code-block">python3 main.py
+# new terminal:
+python3 scripts/test_openvino_local.py</pre>
+            Expect: <code>Backend: openvino</code>
+          </li>
+        </ol>
+        <p class="openvino-note">
+          Without OpenVINO, Evo uses <strong>ONNX Runtime</strong> on CPU — fully supported for local testing.
+          Oracle VM (1&nbsp;GB) should keep <code>EVO_PREFER_OPENVINO=false</code>.
+        </p>
+        <div class="openvino-modal-actions">
+          <button id="openvinoRecheckBtn" class="btn neo-btn primary" type="button">Check again</button>
+          <button id="openvinoModalDismiss" class="btn neo-btn" type="button">Got it</button>
         </div>
       </div>
     </div>

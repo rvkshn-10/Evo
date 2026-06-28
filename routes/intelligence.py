@@ -258,6 +258,12 @@ async def get_evo_visualization():
     return get_evo_runtime().get_visualization()
 
 
+@router.get("/evo/runtime")
+async def get_evo_runtime_status():
+    """Active Evo inference backend (OpenVINO vs ONNX Runtime)."""
+    return get_evo_runtime().get_runtime_status()
+
+
 @router.get("/alerts")
 async def get_alerts(
     area: Optional[str] = Query(default=None),

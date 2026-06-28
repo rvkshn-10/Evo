@@ -11,300 +11,367 @@ async function fetchJson(path) {
   return response.json();
 }
 
+const PALETTE = {
+  input: { fill: "#0ea5e9", stroke: "#7dd3fc", glow: "rgba(14,165,233,0.35)" },
+  dense: { fill: "#8b5cf6", stroke: "#c4b5fd", glow: "rgba(139,92,246,0.3)" },
+  tree: { fill: "#10b981", stroke: "#6ee7b7", glow: "rgba(16,185,129,0.3)" },
+  branch: { fill: "#6366f1", stroke: "#a5b4fc", glow: "rgba(99,102,241,0.3)" },
+  output: { fill: "#f59e0b", stroke: "#fcd34d", glow: "rgba(245,158,11,0.35)" },
+  panel: "rgba(15,23,42,0.55)",
+  panelBorder: "rgba(148,163,184,0.18)",
+  synapse: "rgba(56,189,248,0.14)",
+  synapseHot: "rgba(167,139,250,0.45)",
+};
+
+function layerStyle(layer) {
+  const type = layer.type || "dense";
+  if (type === "input") return PALETTE.input;
+  if (type === "output") return PALETTE.output;
+  if (type === "tree") return PALETTE.tree;
+  if (type === "branch") return PALETTE.branch;
+  return PALETTE.dense;
+}
+
 function neuronCountForLayer(layer) {
   const label = layer.label || layer.id || "";
   const match = label.match(/(\d+)/);
   if (match) {
     const n = parseInt(match[1], 10);
-    return Math.min(10, Math.max(4, Math.round(n / 12)));
+    return Math.min(8, Math.max(4, Math.round(n / 16)));
   }
-  if (layer.type === "input") return 12;
-  if (layer.type === "output") return 2;
-  if (layer.type === "branch") return 6;
-  return 7;
+  if (layer.type === "input") return 14;
+  if (layer.type === "output") return 1;
+  if (layer.type === "tree") return 5;
+  return 6;
 }
 
-function layerColor(layer) {
-  if (layer.type === "input") return { core: "#38bdf8", glow: "rgba(56,189,248,0.45)" };
-  if (layer.type === "output") return { core: "#fbbf24", glow: "rgba(251,191,36,0.4)" };
-  if (layer.type === "branch") return { core: "#a78bfa", glow: "rgba(167,139,250,0.35)" };
-  return { core: "#f472b6", glow: "rgba(244,114,182,0.35)" };
+function setupCanvas(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(rect.width || canvas.width, 320);
+  const h = Math.max(rect.height || canvas.height, 280);
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
 }
 
-function buildLayerColumns(architecture) {
+function buildLayout(architecture, w, h) {
   const layers = architecture.layers || [];
   const edges = architecture.edges || [];
-  const hasLayout = layers.some(
-    (layer) => Number.isFinite(layer.column) || Number.isFinite(layer.lane),
-  );
+  const padX = 56;
+  const padY = 44;
+  const maxCol = Math.max(...layers.map((l) => (Number.isFinite(l.column) ? l.column : 0)), 1);
 
   const columns = [];
-  const layerMap = new Map();
-
   layers.forEach((layer, index) => {
     const column = Number.isFinite(layer.column) ? layer.column : index;
     const lane = Number.isFinite(layer.lane) ? layer.lane : 0.5;
     const count = neuronCountForLayer(layer);
-    const neurons = Array.from({ length: count }, (_, i) => ({
-      id: `${layer.id}_n${i}`,
-      layerId: layer.id,
-      index: i,
+    const x = padX + (column / maxCol) * (w - padX * 2);
+    const neurons = Array.from({ length: count }, (_, i) => ({ index: i }));
+    const spacing = Math.min(20, (h - padY * 2) / (count + 1));
+    const totalH = (count - 1) * spacing;
+    const cy = padY + lane * (h - padY * 2);
+    const startY = cy - totalH / 2;
+
+    const positions = neurons.map((n, i) => ({
+      x,
+      y: startY + i * spacing,
+      layer,
+      style: layerStyle(layer),
+      ni: i,
     }));
 
-    const entry = {
+    const label = (layer.label || layer.id).replace(/\\n/g, "\n");
+  const panelTop = Math.min(...positions.map((p) => p.y)) - 22;
+  const panelBottom = Math.max(...positions.map((p) => p.y)) + 22;
+
+    columns.push({
       layer,
       column,
       lane,
-      neurons,
-      color: layerColor(layer),
-    };
-    layerMap.set(layer.id, entry);
-
-    let col = columns.find((c) => c.column === column && c.lane === lane);
-    if (!col) {
-      col = { column, lane, stacks: [] };
-      columns.push(col);
-    }
-    col.stacks.push(entry);
+      x,
+      positions,
+      panel: { top: panelTop, bottom: panelBottom, left: x - 34, right: x + 34 },
+      label,
+      type: layer.type || "dense",
+    });
   });
 
   columns.sort((a, b) => a.column - b.column || a.lane - b.lane);
 
-  return { columns, edges, hasLayout, layerMap };
+  const byLayerId = new Map(columns.map((c) => [c.layer.id, c.positions]));
+
+  return { columns, edges, byLayerId, padX, w, h };
 }
 
-function drawNeuron(ctx, x, y, radius, color, pulse = 0) {
-  const glowR = radius + 6 + pulse * 4;
-  const grad = ctx.createRadialGradient(x, y, 0, x, y, glowR);
-  grad.addColorStop(0, color.core);
-  grad.addColorStop(0.55, color.core);
-  grad.addColorStop(1, "rgba(0,0,0,0)");
-
-  ctx.save();
-  ctx.globalAlpha = 0.35 + pulse * 0.15;
-  ctx.fillStyle = color.glow;
-  ctx.beginPath();
-  ctx.arc(x, y, glowR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  const body = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.35, 0, x, y, radius);
-  body.addColorStop(0, "#ffffff");
-  body.addColorStop(0.25, color.core);
-  body.addColorStop(1, "rgba(0,0,0,0.55)");
-
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = "rgba(255,255,255,0.35)";
-  ctx.lineWidth = 0.8;
-  ctx.stroke();
-}
-
-function drawSynapse(ctx, ax, ay, bx, by, weight, t) {
-  const midX = (ax + bx) / 2;
-  const midY = (ay + by) / 2 - 18 - weight * 8;
-  const alpha = 0.08 + weight * 0.22;
-
-  ctx.strokeStyle = `rgba(56,189,248,${alpha})`;
-  ctx.lineWidth = 0.5 + weight * 1.2;
-  ctx.beginPath();
-  ctx.moveTo(ax, ay);
-  ctx.quadraticCurveTo(midX, midY, bx, by);
-  ctx.stroke();
-
-  const dotT = (t * 0.4 + weight) % 1;
-  const px = (1 - dotT) * (1 - dotT) * ax + 2 * (1 - dotT) * dotT * midX + dotT * dotT * bx;
-  const py = (1 - dotT) * (1 - dotT) * ay + 2 * (1 - dotT) * dotT * midY + dotT * dotT * by;
-
-  ctx.fillStyle = `rgba(167,139,250,${0.35 + weight * 0.3})`;
-  ctx.beginPath();
-  ctx.arc(px, py, 1.2 + weight, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawNetworkGraph(canvas, architecture, time = 0) {
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-
+function drawBackground(ctx, w, h) {
   const bg = ctx.createLinearGradient(0, 0, w, h);
-  bg.addColorStop(0, "rgba(8,12,24,0.95)");
-  bg.addColorStop(0.5, "rgba(12,18,36,0.98)");
-  bg.addColorStop(1, "rgba(6,10,20,0.95)");
+  bg.addColorStop(0, "#070b14");
+  bg.addColorStop(0.45, "#0c1220");
+  bg.addColorStop(1, "#060910");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 
-  ctx.strokeStyle = "rgba(255,255,255,0.03)";
-  ctx.lineWidth = 1;
-  for (let gx = 40; gx < w; gx += 40) {
-    ctx.beginPath();
-    ctx.moveTo(gx, 0);
-    ctx.lineTo(gx, h);
-    ctx.stroke();
-  }
-  for (let gy = 40; gy < h; gy += 40) {
-    ctx.beginPath();
-    ctx.moveTo(0, gy);
-    ctx.lineTo(w, gy);
-    ctx.stroke();
-  }
+  const vignette = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.85);
+  vignette.addColorStop(0, "rgba(56,189,248,0.04)");
+  vignette.addColorStop(1, "rgba(0,0,0,0.45)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, w, h);
 
-  const { columns, edges } = buildLayerColumns(architecture);
-  if (!columns.length) {
+  ctx.strokeStyle = "rgba(255,255,255,0.025)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 48) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 48) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
+function drawLayerPanels(ctx, columns) {
+  columns.forEach((col) => {
+    const { panel, type } = col;
+    const height = panel.bottom - panel.top;
+    ctx.fillStyle = PALETTE.panel;
+    ctx.strokeStyle = PALETTE.panelBorder;
+    ctx.lineWidth = 1;
+    roundRect(ctx, panel.left, panel.top, panel.right - panel.left, height, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(226,232,240,0.9)";
+    ctx.font = "600 11px 'DM Sans', system-ui, sans-serif";
+    ctx.textAlign = "center";
+    const lines = col.label.split("\n");
+    lines.forEach((line, i) => {
+      ctx.fillText(line, col.x, panel.top - 14 - (lines.length - 1 - i) * 13);
+    });
+
+    ctx.fillStyle = "rgba(148,163,184,0.75)";
+    ctx.font = "500 9px 'DM Sans', system-ui, sans-serif";
+    ctx.fillText(type.toUpperCase(), col.x, panel.bottom + 14);
+  });
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function drawSynapses(ctx, edges, byLayerId, time) {
+  edges.forEach(([fromId, toId], edgeIndex) => {
+    const fromList = byLayerId.get(fromId) || [];
+    const toList = byLayerId.get(toId) || [];
+    if (!fromList.length || !toList.length) return;
+
+    const pairs = Math.min(fromList.length, toList.length, 10);
+    for (let i = 0; i < pairs; i++) {
+      const a = fromList[Math.floor((i / pairs) * fromList.length)];
+      const b = toList[Math.floor((i / pairs) * toList.length)];
+      const weight = 0.25 + ((edgeIndex * 5 + i * 11) % 9) / 12;
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2 - 12;
+
+      ctx.strokeStyle = `rgba(56,189,248,${0.06 + weight * 0.12})`;
+      ctx.lineWidth = 0.6 + weight * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(midX, midY, b.x, b.y);
+      ctx.stroke();
+
+      const phase = (time * 0.35 + edgeIndex * 0.1 + i * 0.08) % 1;
+      const t = phase;
+      const px = (1 - t) ** 2 * a.x + 2 * (1 - t) * t * midX + t ** 2 * b.x;
+      const py = (1 - t) ** 2 * a.y + 2 * (1 - t) * t * midY + t ** 2 * b.y;
+      ctx.fillStyle = PALETTE.synapseHot;
+      ctx.globalAlpha = 0.25 + weight * 0.35;
+      ctx.beginPath();
+      ctx.arc(px, py, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  });
+}
+
+function drawNode(ctx, pos, time) {
+  const { x, y, layer, style, ni } = pos;
+  const type = layer.type || "dense";
+  const pulse = 0.5 + 0.5 * Math.sin(time * 1.2 + ni * 0.35);
+  const r = type === "output" ? 9 : type === "tree" ? 6.5 : 5.5;
+
+  ctx.save();
+  ctx.shadowColor = style.glow;
+  ctx.shadowBlur = 8 + pulse * 4;
+
+  if (type === "tree") {
+    ctx.fillStyle = style.fill;
+    ctx.strokeStyle = style.stroke;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x + r, y);
+    ctx.lineTo(x, y + r);
+    ctx.lineTo(x - r, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (type === "input") {
+    const grad = ctx.createRadialGradient(x - 1, y - 1, 0, x, y, r + 2);
+    grad.addColorStop(0, "#e0f2fe");
+    grad.addColorStop(0.35, style.fill);
+    grad.addColorStop(1, "#0369a1");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = style.stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  } else {
+    const grad = ctx.createRadialGradient(x - 1.5, y - 1.5, 0, x, y, r + 1);
+    grad.addColorStop(0, "#f8fafc");
+    grad.addColorStop(0.3, style.fill);
+    grad.addColorStop(1, "rgba(15,23,42,0.9)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = style.stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawLegend(ctx, w, h, architecture) {
+  const items = [
+    { label: "Input features", color: PALETTE.input.fill },
+    { label: "MLP head", color: PALETTE.dense.fill },
+    { label: "Tree head", color: PALETTE.tree.fill },
+    { label: "Outputs", color: PALETTE.output.fill },
+  ];
+  const hasTree = (architecture.layers || []).some((l) => l.type === "tree");
+  const visible = hasTree ? items : items.filter((i) => i.label !== "Tree head");
+
+  ctx.font = "500 10px 'DM Sans', system-ui, sans-serif";
+  ctx.textAlign = "left";
+  let x = 16;
+  const y = h - 12;
+  visible.forEach((item) => {
+    ctx.fillStyle = item.color;
+    ctx.beginPath();
+    ctx.arc(x + 4, y - 3, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(148,163,184,0.85)";
+    ctx.fillText(item.label, x + 12, y);
+    x += ctx.measureText(item.label).width + 28;
+  });
+}
+
+function drawNetworkGraph(canvas, architecture, time = 0) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  drawBackground(ctx, w, h);
+
+  if (!architecture?.layers?.length) {
     ctx.fillStyle = "#94a3b8";
-    ctx.font = "14px DM Sans, system-ui";
+    ctx.font = "14px 'DM Sans', system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Architecture data unavailable", w / 2, h / 2);
     return;
   }
 
-  const padX = 70;
-  const padY = 50;
-  const maxCol = Math.max(...columns.map((c) => c.column), 1);
-  const positions = {};
+  const layout = buildLayout(architecture, w, h);
+  drawLayerPanels(ctx, layout.columns);
+  drawSynapses(ctx, layout.edges, layout.byLayerId, time);
+  layout.columns.forEach((col) => col.positions.forEach((pos) => drawNode(ctx, pos, time)));
+  drawLegend(ctx, w, h, architecture);
 
-  columns.forEach((col) => {
-    const x = padX + (col.column / maxCol) * (w - padX * 2);
-    const stackCount = col.stacks.length;
-    col.stacks.forEach((stack, si) => {
-      const laneOffset = stackCount > 1 ? (si - (stackCount - 1) / 2) * 0.22 : 0;
-      const baseY = padY + (col.lane + laneOffset) * (h - padY * 2);
-      const spacing = Math.min(22, (h - padY * 2) / (stack.neurons.length + 2));
-      const totalH = (stack.neurons.length - 1) * spacing;
-      const startY = baseY - totalH / 2;
-
-      stack.neurons.forEach((neuron, ni) => {
-        positions[neuron.id] = {
-          x,
-          y: startY + ni * spacing,
-          color: stack.color,
-          layer: stack.layer,
-          ni,
-          count: stack.neurons.length,
-        };
-      });
-
-      stack.labelY = startY - 28;
-      stack.labelX = x;
-    });
-  });
-
-  const layerNeurons = new Map();
-  Object.entries(positions).forEach(([id, pos]) => {
-    const lid = pos.layer.id;
-    if (!layerNeurons.has(lid)) layerNeurons.set(lid, []);
-    layerNeurons.get(lid).push(pos);
-  });
-
-  edges.forEach(([fromId, toId], edgeIndex) => {
-    const fromList = layerNeurons.get(fromId) || [];
-    const toList = layerNeurons.get(toId) || [];
-    if (!fromList.length || !toList.length) return;
-
-    const pairs = Math.min(fromList.length, toList.length, 14);
-    for (let i = 0; i < pairs; i++) {
-      const fi = Math.floor((i / pairs) * fromList.length);
-      const ti = Math.floor((i / pairs) * toList.length);
-      const a = fromList[fi];
-      const b = toList[ti];
-      const weight = 0.3 + ((edgeIndex * 7 + i * 13) % 10) / 14;
-      drawSynapse(ctx, a.x, a.y, b.x, b.y, weight, time + i * 0.07);
-    }
-  });
-
-  Object.values(positions).forEach((pos) => {
-    const pulse = 0.5 + 0.5 * Math.sin(time * 2 + pos.ni * 0.4);
-    drawNeuron(ctx, pos.x, pos.y, 7, pos.color, pulse * 0.12);
-  });
-
-  columns.forEach((col) => {
-    col.stacks.forEach((stack) => {
-      const label = (stack.layer.label || stack.layer.id).replace(/\\n/g, "\n");
-      const lines = label.split("\n");
-      ctx.fillStyle = "rgba(238,242,255,0.85)";
-      ctx.font = "600 11px DM Sans, system-ui";
-      ctx.textAlign = "center";
-      lines.forEach((line, i) => {
-        ctx.fillText(line, stack.labelX, stack.labelY + i * 14);
-      });
-
-      ctx.fillStyle = "rgba(148,163,184,0.7)";
-      ctx.font = "10px DM Sans, system-ui";
-      ctx.fillText(stack.layer.type || "dense", stack.labelX, stack.labelY + lines.length * 14 + 4);
-    });
-  });
-
-  ctx.fillStyle = "rgba(148,163,184,0.5)";
-  ctx.font="10px DM Sans, system-ui";
+  const title = architecture.name || architecture.selected_model || "Evo dual-head";
+  ctx.fillStyle = "rgba(226,232,240,0.92)";
+  ctx.font = "600 12px 'DM Sans', system-ui, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("← hazard features", padX - 10, h - 16);
-  ctx.textAlign = "right";
-  ctx.fillText("evacuation outputs →", w - padX + 10, h - 16);
+  ctx.fillText(title, 16, 20);
+  ctx.fillStyle = "rgba(148,163,184,0.7)";
+  ctx.font = "500 10px 'DM Sans', system-ui, sans-serif";
+  ctx.fillText("hazard + occupancy → success % · evacuation time", 16, 34);
 }
 
 function drawLossChart(canvas, metrics) {
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width;
-  const h = canvas.height;
+  const { ctx, w, h } = setupCanvas(canvas);
   ctx.clearRect(0, 0, w, h);
 
   const train = metrics.train_loss || [];
   const val = metrics.val_loss || [];
   if (!train.length && !val.length) {
     ctx.fillStyle = "#94a3b8";
-    ctx.font = "13px DM Sans, system-ui";
+    ctx.font = "13px 'DM Sans', system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(metrics.message || "Training metrics pending", w / 2, h / 2);
     return;
   }
 
-  const series = train.length ? train : val;
-  const maxY = Math.max(...series, ...(val.length ? val : [0])) * 1.1 || 1;
-  const pad = 28;
+  const maxY = Math.max(...train, ...(val.length ? val : [0])) * 1.08 || 1;
+  const pad = { t: 28, r: 16, b: 28, l: 36 };
+  const plotW = w - pad.l - pad.r;
+  const plotH = h - pad.t - pad.b;
 
-  ctx.fillStyle = "rgba(0,0,0,0.25)";
-  ctx.fillRect(pad, pad, w - pad * 2, h - pad * 2);
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  roundRect(ctx, pad.l, pad.t, plotW, plotH, 8);
+  ctx.fill();
 
-  const plot = (data, color, fillAlpha) => {
+  const plot = (data, color, fill) => {
     if (!data.length) return;
     ctx.beginPath();
     data.forEach((y, i) => {
-      const x = pad + (i / Math.max(data.length - 1, 1)) * (w - pad * 2);
-      const yy = h - pad - (y / maxY) * (h - pad * 2);
+      const x = pad.l + (i / Math.max(data.length - 1, 1)) * plotW;
+      const yy = pad.t + plotH - (y / maxY) * plotH;
       if (i === 0) ctx.moveTo(x, yy);
       else ctx.lineTo(x, yy);
     });
-    ctx.lineTo(pad + (w - pad * 2), h - pad);
-    ctx.lineTo(pad, h - pad);
+    ctx.lineTo(pad.l + plotW, pad.t + plotH);
+    ctx.lineTo(pad.l, pad.t + plotH);
     ctx.closePath();
-    ctx.fillStyle = fillAlpha;
+    ctx.fillStyle = fill;
     ctx.fill();
-
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
     data.forEach((y, i) => {
-      const x = pad + (i / Math.max(data.length - 1, 1)) * (w - pad * 2);
-      const yy = h - pad - (y / maxY) * (h - pad * 2);
+      const x = pad.l + (i / Math.max(data.length - 1, 1)) * plotW;
+      const yy = pad.t + plotH - (y / maxY) * plotH;
       if (i === 0) ctx.moveTo(x, yy);
       else ctx.lineTo(x, yy);
     });
     ctx.stroke();
   };
 
-  plot(train, "#38bdf8", "rgba(56,189,248,0.12)");
+  plot(train, "#38bdf8", "rgba(56,189,248,0.1)");
   plot(val, "#fbbf24", "rgba(251,191,36,0.08)");
 
-  ctx.fillStyle = "#94a3b8";
-  ctx.font = "11px DM Sans, system-ui";
+  ctx.font = "500 10px 'DM Sans', system-ui, sans-serif";
+  ctx.fillStyle = "#38bdf8";
   ctx.textAlign = "left";
-  ctx.fillText("● Train", pad, 16);
+  ctx.fillText("Train", pad.l, 16);
   ctx.fillStyle = "#fbbf24";
-  ctx.fillText("● Val", pad + 58, 16);
+  ctx.fillText("Validation", pad.l + 44, 16);
 }
 
 function renderMetrics(data) {
@@ -313,6 +380,9 @@ function renderMetrics(data) {
     Number.isFinite(value) ? Number(value).toFixed(digits) : "—";
   const gateStatus = metrics.all_quality_gates_pass;
   const approved = gateStatus === true;
+  const backend = data.backend || "—";
+  const runtimeLabel =
+    backend === "openvino" ? "OpenVINO (CPU)" : backend === "onnxruntime" ? "ONNX Runtime (CPU)" : backend;
 
   document.getElementById("evoMetrics").innerHTML = `
     <span class="status-badge">${approved ? "Production approved" : "Research preview"}</span>
@@ -321,8 +391,7 @@ function renderMetrics(data) {
     <div class="metric-row"><span class="metric-label">Val MAE time</span><span class="metric-value">${format(metrics.val_mae_time_min)} min</span></div>
     <div class="metric-row"><span class="metric-label">Val R² time</span><span class="metric-value">${format(metrics.val_r2_time_min)}</span></div>
     <div class="metric-row"><span class="metric-label">Quality gates</span><span class="metric-value">${gateStatus == null ? "—" : gateStatus ? "Passed" : "Failed"}</span></div>
-    <div class="metric-row"><span class="metric-label">Runtime</span><span class="metric-value">${data.backend || "—"}</span></div>
-    <div class="metric-row"><span class="metric-label">OpenVINO</span><span class="metric-value">${data.openvino_connected ? "Connected" : "Not loaded"}</span></div>
+    <div class="metric-row"><span class="metric-label">Runtime</span><span class="metric-value">${runtimeLabel}</span></div>
   `;
 }
 
@@ -346,8 +415,7 @@ function startNetworkAnimation() {
       return;
     }
     if (!start) start = ts;
-    const t = (ts - start) / 1000;
-    drawNetworkGraph(netCanvas, evoData.architecture, t);
+    drawNetworkGraph(netCanvas, evoData.architecture, (ts - start) / 1000);
     animationFrame = requestAnimationFrame(tick);
   };
   if (animationFrame) cancelAnimationFrame(animationFrame);
@@ -389,8 +457,14 @@ async function loadEvoData() {
 
   evoData = data;
   const modelVersion = data.model_version || "evo1.2";
+  const backend =
+    data.backend === "openvino"
+      ? "OpenVINO"
+      : data.backend === "onnxruntime"
+        ? "ONNX Runtime"
+        : data.backend || "ready";
   document.getElementById("evoStatus").textContent = data.available
-    ? `${modelVersion} · ${data.backend || "ready"}`
+    ? `${modelVersion} · ${backend}`
     : `${modelVersion} · awaiting model artifacts`;
 }
 
@@ -405,6 +479,10 @@ export async function initEvoVisualization() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && modalOpen) closeEvoModal();
+  });
+
+  window.addEventListener("resize", () => {
+    if (modalOpen) renderEvoViz();
   });
 
   await loadEvoData();

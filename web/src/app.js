@@ -19,6 +19,7 @@ const HAZARD_FILTERS = [
 
 const activeFilters = Object.fromEntries(HAZARD_FILTERS.map((f) => [f.id, f.default]));
 let showHeatmap = true;
+let openvinoRuntimeCache = null;
 
 function apiUrl(path) {
   return `${API_BASE}${path}`;
@@ -117,7 +118,127 @@ async function enableNotifications() {
   }
 }
 
-function notifyNewHazards(snapshot) {
+function isEvoRunMode() {
+  return document.getElementById("runModeSelect")?.value === "evo";
+}
+
+function updateOpenvinoRowVisibility() {
+  const row = document.getElementById("openvinoRow");
+  if (!row) return;
+  row.classList.toggle("hidden", !isEvoRunMode());
+}
+
+function setOpenvinoDot(state) {
+  const dot = document.getElementById("openvinoStatusDot");
+  if (!dot) return;
+  dot.classList.remove("connected", "fallback");
+  if (state === "connected") dot.classList.add("connected");
+  else if (state === "fallback") dot.classList.add("fallback");
+}
+
+async function fetchOpenvinoRuntime() {
+  const data = await fetchJson(apiUrl("/api/evo/runtime"));
+  if (data) openvinoRuntimeCache = data;
+  return data;
+}
+
+function openOpenvinoModal(status) {
+  const modal = document.getElementById("openvinoModal");
+  const statusEl = document.getElementById("openvinoModalStatus");
+  if (!modal || !statusEl) return;
+
+  if (status?.openvino_connected) {
+    statusEl.textContent = `Connected — Evo is using OpenVINO (${status.model_version || "evo1.2"}).`;
+  } else if (status?.backend === "onnxruntime") {
+    statusEl.textContent =
+      `Not connected — Evo is running on ONNX Runtime (CPU). OpenVINO is installed in settings but not active, or IR files are missing.`;
+  } else if (!status?.available) {
+    statusEl.textContent = "Evo model files not found on the API server. Ensure models/evo1.2/ exists and restart python3 main.py.";
+  } else {
+    statusEl.textContent =
+      "OpenVINO is not connected. Follow the steps below, restart the API, then click Check again.";
+  }
+
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeOpenvinoModal() {
+  const modal = document.getElementById("openvinoModal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+async function syncOpenvinoUi({ showGuideIfDisconnected = false } = {}) {
+  updateOpenvinoRowVisibility();
+  if (!isEvoRunMode()) return;
+
+  const status = await fetchOpenvinoRuntime();
+  const toggle = document.getElementById("openvinoToggle");
+  if (!status) {
+    setOpenvinoDot("unknown");
+    if (toggle) toggle.checked = false;
+    return;
+  }
+
+  if (status.openvino_connected) {
+    setOpenvinoDot("connected");
+    if (toggle) toggle.checked = true;
+  } else if (status.loaded && status.backend === "onnxruntime") {
+    setOpenvinoDot("fallback");
+    if (toggle) toggle.checked = false;
+  } else {
+    setOpenvinoDot("unknown");
+    if (toggle) toggle.checked = false;
+  }
+
+  if (showGuideIfDisconnected && !status.openvino_connected) {
+    openOpenvinoModal(status);
+  }
+}
+
+async function onOpenvinoToggleChange(event) {
+  const checkbox = event.target;
+  if (!checkbox.checked) return;
+
+  const status = await fetchOpenvinoRuntime();
+  if (status?.openvino_connected) {
+    setOpenvinoDot("connected");
+    showToast("OpenVINO connected", `Evo inference via OpenVINO (${status.model_version}).`, "ok");
+    return;
+  }
+
+  checkbox.checked = false;
+  setOpenvinoDot(status?.backend === "onnxruntime" ? "fallback" : "unknown");
+  openOpenvinoModal(status);
+}
+
+function initOpenvinoControls() {
+  document.getElementById("openvinoToggle")?.addEventListener("change", onOpenvinoToggleChange);
+  document.getElementById("openvinoModalClose")?.addEventListener("click", closeOpenvinoModal);
+  document.getElementById("openvinoModalDismiss")?.addEventListener("click", closeOpenvinoModal);
+  document.getElementById("openvinoModalBackdrop")?.addEventListener("click", closeOpenvinoModal);
+  document.getElementById("openvinoRecheckBtn")?.addEventListener("click", async () => {
+    const status = await fetchOpenvinoRuntime();
+    if (status?.openvino_connected) {
+      closeOpenvinoModal();
+      document.getElementById("openvinoToggle").checked = true;
+      setOpenvinoDot("connected");
+      showToast("OpenVINO connected", "Evo is now using OpenVINO.", "ok");
+    } else {
+      openOpenvinoModal(status);
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !document.getElementById("openvinoModal")?.classList.contains("hidden")) {
+      closeOpenvinoModal();
+    }
+  });
+}
+
+async function notifyNewHazards(snapshot) {
   if (!lastSnapshot) return;
 
   const prevQuakeIds = new Set((lastSnapshot.earthquakes || []).map((q) => q.id));
@@ -484,12 +605,19 @@ export async function initApp() {
   document.getElementById("refreshBtn").addEventListener("click", refresh);
   document.getElementById("notifyBtn").addEventListener("click", enableNotifications);
   document.getElementById("runModeSelect")?.addEventListener("change", async () => {
+    updateOpenvinoRowVisibility();
+    if (isEvoRunMode()) {
+      await syncOpenvinoUi();
+    }
     try {
       renderSnapshot(await fetchDashboard());
     } catch (error) {
       console.error(error);
     }
   });
+
+  initOpenvinoControls();
+  updateOpenvinoRowVisibility();
 
   try {
     const [snapshot, pipelineStatus] = await Promise.all([
@@ -498,6 +626,9 @@ export async function initApp() {
     ]);
 
     renderSnapshot(snapshot);
+    if (isEvoRunMode()) {
+      await syncOpenvinoUi();
+    }
 
     const mendocino = (snapshot.earthquakes || []).find((q) => {
       const text = (q.headline || q.title || "").toLowerCase();

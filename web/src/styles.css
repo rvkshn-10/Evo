@@ -572,6 +572,102 @@ td code {
   outline: none;
 }
 
+.openvino-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: 0.4rem 0.65rem;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.openvino-row.hidden {
+  display: none;
+}
+
+.openvino-row input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.openvino-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.45);
+  flex-shrink: 0;
+}
+
+.openvino-dot.connected {
+  background: var(--ok);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.55);
+}
+
+.openvino-dot.fallback {
+  background: var(--warn);
+}
+
+.openvino-modal-content {
+  max-width: 520px;
+}
+
+.openvino-modal-body {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.openvino-current-status {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.openvino-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+}
+
+.openvino-steps li {
+  margin-bottom: 0.85rem;
+}
+
+.openvino-steps strong {
+  color: var(--text);
+}
+
+.code-block {
+  margin: 0.45rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.55rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #e2e8f0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.openvino-note {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+}
+
+.openvino-modal-actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
 .toast-container {
   position: fixed;
   top: 1rem;
@@ -685,7 +781,7 @@ td code {
 
 .evo-viz-wrap canvas {
   width: 100%;
-  height: auto;
+  height: 380px;
   display: block;
   border-radius: 0.65rem;
 }
