@@ -154,7 +154,7 @@ async function enableNotifications() {
   if (notificationsEnabled) {
     showToast(
       "Device notifications on",
-      "Run Agent will alert this device when the pipeline finishes.",
+      "Run Agent will alert this device when Evo finishes a run.",
       "ok",
     );
   }
@@ -410,7 +410,7 @@ function startPipelinePolling(onComplete) {
       } else if (status.status === "failed") {
         stopPipelinePolling();
         showPipelineProgress(false);
-        notifyAgentEvent("Agent run failed", status.error || "Unknown error", "warn");
+        notifyAgentEvent("Evo run failed", status.error || "Unknown error", "warn");
         await onComplete?.(status);
       }
     } catch (error) {
@@ -666,7 +666,7 @@ async function finishAgentRun(status) {
   const snapshot = await fetchDashboard();
   renderSnapshot(snapshot);
   if (status?.status === "completed") {
-    notifyAgentEvent("Agent run complete", summarizeAgentSnapshot(snapshot), "ok");
+    notifyAgentEvent("Evo run complete", summarizeAgentSnapshot(snapshot), "ok");
     const { refreshHistoryIfOpen } = await import("./history.js");
     refreshHistoryIfOpen();
   }

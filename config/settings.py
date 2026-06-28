@@ -12,7 +12,7 @@ class Settings:
     PROJECT_ROOT: Path = PROJECT_ROOT
 
     # Agency identity
-    AGENCY_NAME: str = os.getenv("AGENCY_NAME", "Emergency Management Office")
+    AGENCY_NAME: str = os.getenv("AGENCY_NAME", "Evo")
 
     # LLM
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")

@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="Emergency Management Office AI",
-    description="AI-powered emergency event coordination, research, and broadcast system",
+    title="Evo",
+    description="Evo evacuation intelligence — hazards, occupancy, and ML predictions",
     version="1.0.0",
 )
 

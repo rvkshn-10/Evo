@@ -1,8 +1,8 @@
-# Emergency Management Office AI
+# Evo
 
-An AI-powered emergency event coordination and broadcast system built with **LangChain**, **FastAPI**, and **OpenAI GPT-4o**. When an emergency event is reported via the REST API, a pipeline of specialized agents automatically logs the event, researches it, downloads media, generates charts, writes news content, assembles a broadcast panel, and produces a HeyGen-ready script — all in the background.
+An AI-powered evacuation intelligence platform built with **LangChain**, **FastAPI**, and **OpenAI GPT-4o**. When an emergency event is reported via the REST API, a pipeline of specialized agents automatically logs the event, researches it, downloads media, generates charts, writes news content, assembles a broadcast panel, and produces a HeyGen-ready script — all in the background.
 
-**Evacuation Intelligence dashboard (Evo 1.2):** [https://evac-evo.vercel.app](https://evac-evo.vercel.app) · API repo: [github.com/rvkshn-10/Evo](https://github.com/rvkshn-10/Evo)
+**Live dashboard:** [https://evac-evo.vercel.app](https://evac-evo.vercel.app) · Repo: [github.com/rvkshn-10/Evo](https://github.com/rvkshn-10/Evo)
 
 ---
 
@@ -464,7 +464,7 @@ Submit an emergency event notification. Returns `202 Accepted` immediately; the 
 
 ### `GET /health`
 ```json
-{ "status": "ok", "agency": "Emergency Management Office AI" }
+{ "status": "ok", "agency": "Evo" }
 ```
 
 ### `GET /docs`
@@ -602,7 +602,7 @@ Multiple `update` events can be sent between `start` and `end`. Each one trigger
 |----------|---------|----------|-------------|
 | `OPENAI_API_KEY` | — | Yes | OpenAI API key (GPT-4o) |
 | `TAVILY_API_KEY` | — | Yes | Tavily search API key |
-| `AGENCY_NAME` | `Emergency Management Office AI` | No | Display name |
+| `AGENCY_NAME` | `Evo` | No | Display name |
 | `HOST` | `0.0.0.0` | No | Server bind address |
 | `PORT` | `8092` | No | Server port |
 | `DEBUG` | `True` | No | Enable hot-reload |

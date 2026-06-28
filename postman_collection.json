@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "emo-ai-collection-v1",
-    "name": "Emergency Management Office AI",
-    "description": "Example requests for the Emergency Management Office AI API.\n\nSimulated earthquake scenario: M6.5 earthquake centered at Sacramento State University (38.5616° N, 121.4246° W) with a 10-mile affected radius.\n\nEndpoint: POST http://localhost:8092/emergency/event",
+    "name": "Evo",
+    "description": "Example requests for the Evo API.\n\nSimulated earthquake scenario: M6.5 earthquake centered at Sacramento State University (38.5616° N, 121.4246° W) with a 10-mile affected radius.\n\nEndpoint: POST http://localhost:8092/emergency/event",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
