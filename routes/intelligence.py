@@ -78,6 +78,13 @@ class SpotPredictionRequest(BaseModel):
     lon: Optional[float] = None
 
 
+class EvoAcceleratorRequest(BaseModel):
+    accelerator: str = Field(
+        ...,
+        description="auto | cpu | ncs1 | ncs2 — Neural Compute Stick or CPU inference",
+    )
+
+
 @router.post("/event")
 async def post_simple_event(request: SimpleEventRequest, background_tasks: BackgroundTasks):
     """
@@ -373,8 +380,20 @@ async def get_evo_live_flow(
 
 @router.get("/evo/runtime")
 async def get_evo_runtime_status():
-    """Active Evo inference backend (OpenVINO vs ONNX Runtime)."""
+    """Active Evo inference backend (CPU, NCS1/NCS2, or ONNX fallback)."""
     return get_evo_runtime().get_runtime_status()
+
+
+@router.post("/evo/accelerator")
+async def set_evo_accelerator(request: EvoAcceleratorRequest):
+    """Select inference device: auto, cpu, ncs1, or ncs2 (Neural Compute Stick)."""
+    choice = request.accelerator.strip().lower()
+    if choice not in {"auto", "cpu", "ncs1", "ncs2"}:
+        raise HTTPException(
+            status_code=400,
+            detail="accelerator must be one of: auto, cpu, ncs1, ncs2",
+        )
+    return get_evo_runtime().set_accelerator(choice)
 
 
 @router.get("/alerts")

@@ -192,6 +192,7 @@ function openHistoryModal() {
   if (!modal) return;
   modal.classList.remove("hidden");
   document.body.style.overflow = "hidden";
+  document.body.classList.add("history-modal-open");
   loadHistoryPanel();
 }
 
@@ -200,6 +201,7 @@ function closeHistoryModal() {
   if (!modal) return;
   modal.classList.add("hidden");
   document.body.style.overflow = "";
+  document.body.classList.remove("history-modal-open");
 }
 
 export function initHistoryPanel() {

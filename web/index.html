@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Emergency Management Office AI — Evacuation Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -62,16 +62,41 @@
         External AI uses Gemini/OpenAI on every run — <strong>API credits will be consumed</strong>. Prefer Sync or Evo for free refreshes.
       </p>
       <p id="evoLocalNote" class="run-mode-banner evo-local-note hidden" role="status">
-        <strong>Production policy</strong> — Evo 1.2 hybrid runs locally (ONNX/OpenVINO). No Gemini, no OpenAI, no API credits.
+        <strong>Production policy</strong> — Evo 1.2 hybrid runs locally (CPU or Neural Compute Stick on your Mac). No Gemini, no OpenAI, no API credits.
         <span class="glossary-term" data-glossary-key="evo1_3_blocked" tabindex="0">Why not Evo 1.3?</span>
       </p>
       <p id="evo13ResearchWarning" class="run-mode-banner evo13-research-warning hidden" role="status">
         <strong>Research only — may not be accurate.</strong> Evo 1.3 uses internet hazard data and public NIST/NFPA/transit studies to estimate all sites. Not validated by FCUSD drills. Use <strong>Evo 1.2 hybrid</strong> for production.
       </p>
-      <div id="openvinoRow" class="openvino-row neo-inset hidden" title="OpenVINO setup and connection status">
-        <input type="checkbox" id="openvinoToggle" aria-labelledby="openvinoLabelText" />
-        <button id="openvinoLabelText" class="openvino-label-btn" type="button">OpenVINO connection</button>
-        <span id="openvinoStatusDot" class="openvino-dot" aria-hidden="true"></span>
+      <div id="acceleratorRow" class="accelerator-row neo-inset hidden" title="Neural Compute Stick or CPU inference">
+        <div class="run-mode-picker accelerator-picker">
+          <span class="run-mode-picker-label">Inference device</span>
+          <select id="acceleratorSelect" class="run-mode-select-native" aria-label="Inference device">
+            <option value="auto" selected>Auto (detect USB stick)</option>
+            <option value="cpu">CPU only (ONNX / OpenVINO)</option>
+            <option value="ncs2">Neural Compute Stick 2</option>
+            <option value="ncs1">Neural Compute Stick 1</option>
+          </select>
+          <button
+            id="acceleratorTrigger"
+            class="run-mode-trigger"
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="acceleratorMenu"
+          >
+            Auto (detect USB stick)
+          </button>
+          <div id="acceleratorMenu" class="run-mode-menu hidden" role="listbox" aria-label="Inference device options">
+            <button type="button" class="run-mode-option glossary-term" data-accelerator="auto" data-glossary-key="accel_auto" role="option">Auto (detect USB stick)</button>
+            <button type="button" class="run-mode-option glossary-term" data-accelerator="cpu" data-glossary-key="accel_cpu" role="option">CPU only (ONNX / OpenVINO)</button>
+            <button type="button" class="run-mode-option glossary-term" data-accelerator="ncs2" data-glossary-key="accel_ncs2" role="option">Neural Compute Stick 2</button>
+            <button type="button" class="run-mode-option glossary-term" data-accelerator="ncs1" data-glossary-key="accel_ncs1" role="option">Neural Compute Stick 1</button>
+          </div>
+          <p class="run-mode-hover-hint">Local Mac only · plug stick in USB, then select</p>
+        </div>
+        <button id="acceleratorHelpBtn" class="btn neo-btn accelerator-help-btn" type="button" title="NCS setup guide">Setup</button>
+        <span id="acceleratorStatusDot" class="openvino-dot" aria-hidden="true" title="Device status"></span>
       </div>
       <button id="refreshBtn" class="btn neo-btn primary" type="button">Run Agent</button>
       <span id="connectionBadge" class="badge glass-pill">connecting…</span>
@@ -206,8 +231,8 @@
     <div class="evo-modal-content glass-panel neo-card openvino-modal-content">
       <header class="evo-modal-header">
         <div>
-          <h2 id="openvinoModalTitle">Connect OpenVINO</h2>
-          <p id="openvinoModalSubtitle" class="subtitle">Evo runs locally on your machine — OpenVINO is optional but faster on Intel CPUs.</p>
+          <h2 id="openvinoModalTitle">Neural Compute Stick (local Mac)</h2>
+          <p id="openvinoModalSubtitle" class="subtitle">Plug an Intel NCS into USB on the Mac running <code>python3 main.py</code> — not available on the cloud server.</p>
         </div>
         <button id="openvinoModalClose" class="btn neo-btn icon-btn" type="button" aria-label="Close">✕</button>
       </header>
@@ -215,8 +240,14 @@
         <p id="openvinoModalStatus" class="openvino-current-status">Checking runtime…</p>
         <ol class="openvino-steps">
           <li>
+            <strong>Use the local dashboard</strong> — open <code>http://localhost:5173</code> (not Vercel) while the API runs on your Mac.
+          </li>
+          <li>
             <strong>Install OpenVINO</strong> (project root terminal):
             <pre class="code-block">pip install openvino</pre>
+          </li>
+          <li>
+            <strong>Plug in your stick</strong> — NCS2 (recommended) or NCS1 via USB. Use a powered hub if needed.
           </li>
           <li>
             <strong>Confirm model files exist</strong>:
@@ -224,21 +255,14 @@
 models/evo1.2/openvino/evo1.2.bin</pre>
           </li>
           <li>
-            <strong>Enable in <code>.env</code></strong>:
-            <pre class="code-block">EVO_PREFER_OPENVINO=true
-EVO_MODEL_VERSION=evo1.2</pre>
-          </li>
-          <li>
-            <strong>Restart the API</strong> and verify:
-            <pre class="code-block">python3 main.py
-# new terminal:
-python3 scripts/test_openvino_local.py</pre>
-            Expect: <code>Backend: openvino</code>
+            <strong>Start the API</strong> and pick your device from the dropdown:
+            <pre class="code-block">python3 main.py</pre>
+            Select <strong>NCS2</strong> or <strong>NCS1</strong> in Inference device — no restart needed when you plug the stick in later; click Check again.
           </li>
         </ol>
         <p class="openvino-note">
-          Without OpenVINO, Evo uses <strong>ONNX Runtime</strong> on CPU — fully supported for local testing.
-          Oracle VM (1&nbsp;GB) should keep <code>EVO_PREFER_OPENVINO=false</code>.
+          Without a stick, choose <strong>CPU</strong> or <strong>Auto</strong> — Evo uses ONNX/OpenVINO on CPU.
+          The Vercel URL always hits Oracle cloud (no USB). For NCS, run locally.
         </p>
         <div class="openvino-modal-actions">
           <button id="openvinoRecheckBtn" class="btn neo-btn primary" type="button">Check again</button>

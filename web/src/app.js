@@ -1,3 +1,9 @@
+import {
+  initAcceleratorPicker,
+  setAcceleratorDot,
+  syncAcceleratorSelectFromStatus,
+} from "./accelerator.js";
+
 let map;
 let markersLayer;
 let heatLayer = null;
@@ -19,7 +25,7 @@ const HAZARD_FILTERS = [
 
 const activeFilters = Object.fromEntries(HAZARD_FILTERS.map((f) => [f.id, f.default]));
 let showHeatmap = true;
-let openvinoRuntimeCache = null;
+let runtimeCache = null;
 
 function apiUrl(path) {
   return `${API_BASE}${path}`;
@@ -204,131 +210,117 @@ function warnExternalAiCredits({ onRun = false } = {}) {
   showToast(title, message, "warn");
 }
 
-function updateOpenvinoRowVisibility() {
-  const row = document.getElementById("openvinoRow");
+function updateAcceleratorRowVisibility() {
+  const row = document.getElementById("acceleratorRow");
   if (!row) return;
   row.classList.toggle("hidden", !isEvo12RunMode());
 }
 
-function setOpenvinoDot(state) {
-  const dot = document.getElementById("openvinoStatusDot");
-  if (!dot) return;
-  dot.classList.remove("connected", "fallback");
-  if (state === "connected") dot.classList.add("connected");
-  else if (state === "fallback") dot.classList.add("fallback");
-}
-
-async function fetchOpenvinoRuntime() {
+async function fetchEvoRuntime() {
   const data = await fetchJson(apiUrl("/api/evo/runtime"));
-  if (data) openvinoRuntimeCache = data;
+  if (data) runtimeCache = data;
   return data;
 }
 
-function openOpenvinoModal(status) {
+function openAcceleratorModal(status) {
   const modal = document.getElementById("openvinoModal");
   const statusEl = document.getElementById("openvinoModalStatus");
   if (!modal || !statusEl) return;
 
-  if (status?.openvino_connected) {
-    statusEl.textContent = `Connected — Evo is using OpenVINO (${status.model_version || "evo1.2"}).`;
-  } else if (status?.backend === "onnxruntime") {
-    statusEl.textContent =
-      `Not connected — Evo is running on ONNX Runtime (CPU). OpenVINO is installed in settings but not active, or IR files are missing.`;
-  } else if (!status?.available) {
-    statusEl.textContent = "Evo model files not found on the API server. Ensure models/evo1.2/ exists and restart python3 main.py.";
-  } else {
-    statusEl.textContent =
-      "OpenVINO is not connected. Follow the steps below, restart the API, then click Check again.";
-  }
+  statusEl.textContent =
+    status?.status_message ||
+    "Plug a Neural Compute Stick into the Mac running python3 main.py, then select NCS1 or NCS2.";
 
   modal.classList.remove("hidden");
   document.body.style.overflow = "hidden";
 }
 
-function closeOpenvinoModal() {
+function closeAcceleratorModal() {
   const modal = document.getElementById("openvinoModal");
   if (!modal) return;
   modal.classList.add("hidden");
   document.body.style.overflow = "";
 }
 
-async function syncOpenvinoUi({ showGuideIfDisconnected = false } = {}) {
-  updateOpenvinoRowVisibility();
+async function syncAcceleratorUi({ showGuideIfDisconnected = false } = {}) {
+  updateAcceleratorRowVisibility();
   if (!isEvo12RunMode()) return;
 
-  const status = await fetchOpenvinoRuntime();
-  const toggle = document.getElementById("openvinoToggle");
+  const status = await fetchEvoRuntime();
   if (!status) {
-    setOpenvinoDot("unknown");
-    if (toggle) toggle.checked = false;
+    setAcceleratorDot(null);
     return;
   }
 
-  if (status.openvino_connected) {
-    setOpenvinoDot("connected");
-    if (toggle) toggle.checked = true;
-  } else if (status.loaded && status.backend === "onnxruntime") {
-    setOpenvinoDot("fallback");
-    if (toggle) toggle.checked = false;
-  } else {
-    setOpenvinoDot("unknown");
-    if (toggle) toggle.checked = false;
-  }
+  syncAcceleratorSelectFromStatus(status);
+  setAcceleratorDot(status);
 
-  if (showGuideIfDisconnected && !status.openvino_connected) {
-    openOpenvinoModal(status);
+  const onStick =
+    status.backend === "openvino" &&
+    status.device &&
+    String(status.device).toUpperCase().startsWith("MYRIAD");
+  const wantsStick = status.accelerator_requested === "ncs1" || status.accelerator_requested === "ncs2";
+
+  if (showGuideIfDisconnected && wantsStick && !onStick) {
+    openAcceleratorModal(status);
   }
 }
 
-async function onOpenvinoLabelClick() {
-  const status = await fetchOpenvinoRuntime();
-  if (status?.openvino_connected) {
-    setOpenvinoDot("connected");
-    const toggle = document.getElementById("openvinoToggle");
-    if (toggle) toggle.checked = true;
-  } else if (status?.backend === "onnxruntime") {
-    setOpenvinoDot("fallback");
-  }
-  openOpenvinoModal(status);
-}
+function initAcceleratorControls() {
+  initAcceleratorPicker({
+    onChange: async (status) => {
+      if (status) {
+        setAcceleratorDot(status);
+        syncAcceleratorSelectFromStatus(status);
+        const onStick =
+          status.backend === "openvino" &&
+          status.device &&
+          String(status.device).toUpperCase().startsWith("MYRIAD");
+        if (onStick) {
+          showToast(
+            "Neural Compute Stick active",
+            status.status_message || `Running on ${status.device}`,
+            "ok"
+          );
+        } else if (status.accelerator_requested === "ncs1" || status.accelerator_requested === "ncs2") {
+          showToast("Stick not detected", status.status_message || "Plug NCS into USB and try again.", "warn");
+        } else {
+          showToast("Inference device updated", status.status_message || "Using CPU.", "ok");
+        }
+        try {
+          renderSnapshot(await fetchDashboard());
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    },
+  });
 
-async function onOpenvinoToggleChange(event) {
-  const checkbox = event.target;
-  if (!checkbox.checked) return;
-
-  const status = await fetchOpenvinoRuntime();
-  if (status?.openvino_connected) {
-    setOpenvinoDot("connected");
-    showToast("OpenVINO connected", `Evo inference via OpenVINO (${status.model_version}).`, "ok");
-    return;
-  }
-
-  checkbox.checked = false;
-  setOpenvinoDot(status?.backend === "onnxruntime" ? "fallback" : "unknown");
-  openOpenvinoModal(status);
-}
-
-function initOpenvinoControls() {
-  document.getElementById("openvinoToggle")?.addEventListener("change", onOpenvinoToggleChange);
-  document.getElementById("openvinoLabelText")?.addEventListener("click", onOpenvinoLabelClick);
-  document.getElementById("openvinoModalClose")?.addEventListener("click", closeOpenvinoModal);
-  document.getElementById("openvinoModalDismiss")?.addEventListener("click", closeOpenvinoModal);
-  document.getElementById("openvinoModalBackdrop")?.addEventListener("click", closeOpenvinoModal);
+  document.getElementById("acceleratorHelpBtn")?.addEventListener("click", async () => {
+    openAcceleratorModal(await fetchEvoRuntime());
+  });
+  document.getElementById("openvinoModalClose")?.addEventListener("click", closeAcceleratorModal);
+  document.getElementById("openvinoModalDismiss")?.addEventListener("click", closeAcceleratorModal);
+  document.getElementById("openvinoModalBackdrop")?.addEventListener("click", closeAcceleratorModal);
   document.getElementById("openvinoRecheckBtn")?.addEventListener("click", async () => {
-    const status = await fetchOpenvinoRuntime();
-    if (status?.openvino_connected) {
-      closeOpenvinoModal();
-      document.getElementById("openvinoToggle").checked = true;
-      setOpenvinoDot("connected");
-      showToast("OpenVINO connected", "Evo is now using OpenVINO.", "ok");
-    } else {
-      openOpenvinoModal(status);
+    const status = await fetchEvoRuntime();
+    if (status) {
+      setAcceleratorDot(status);
+      syncAcceleratorSelectFromStatus(status);
+      openAcceleratorModal(status);
+      const onStick =
+        status.backend === "openvino" &&
+        status.device &&
+        String(status.device).toUpperCase().startsWith("MYRIAD");
+      if (onStick) {
+        showToast("Neural Compute Stick connected", status.status_message, "ok");
+      }
     }
   });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !document.getElementById("openvinoModal")?.classList.contains("hidden")) {
-      closeOpenvinoModal();
+      closeAcceleratorModal();
     }
   });
 }
@@ -724,7 +716,7 @@ export async function initApp() {
   document.getElementById("refreshBtn").addEventListener("click", refresh);
   document.getElementById("notifyBtn").addEventListener("click", enableNotifications);
   document.getElementById("runModeSelect")?.addEventListener("change", async () => {
-    updateOpenvinoRowVisibility();
+    updateAcceleratorRowVisibility();
     updateExternalAiWarning();
     if (isExternalAiMode()) {
       warnExternalAiCredits();
@@ -733,7 +725,7 @@ export async function initApp() {
       warnEvo13Research();
     }
     if (isEvo12RunMode()) {
-      await syncOpenvinoUi();
+      await syncAcceleratorUi();
     }
     try {
       renderSnapshot(await fetchDashboard());
@@ -742,8 +734,8 @@ export async function initApp() {
     }
   });
 
-  initOpenvinoControls();
-  updateOpenvinoRowVisibility();
+  initAcceleratorControls();
+  updateAcceleratorRowVisibility();
   updateExternalAiWarning();
 
   try {
@@ -754,7 +746,7 @@ export async function initApp() {
 
     renderSnapshot(snapshot);
     if (isEvo12RunMode()) {
-      await syncOpenvinoUi();
+      await syncAcceleratorUi();
     }
 
     const mendocino = (snapshot.earthquakes || []).find((q) => {

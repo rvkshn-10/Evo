@@ -27,6 +27,8 @@ class Settings:
     EVO_MODEL_VERSION: str = os.getenv("EVO_MODEL_VERSION", "evo1.2")
     EVO_MODEL_REPO: str = os.getenv("EVO_MODEL_REPO", "https://github.com/rvkshn-10/Evo")
     EVO_PREFER_OPENVINO: bool = os.getenv("EVO_PREFER_OPENVINO", "true").lower() == "true"
+    # auto | cpu | ncs1 | ncs2 — Neural Compute Stick selection (local Mac with USB stick)
+    EVO_ACCELERATOR: str = os.getenv("EVO_ACCELERATOR", "auto")
     EVO_HYBRID_MODE: bool = os.getenv("EVO_HYBRID_MODE", "true").lower() == "true"
     EVO_TIME_CATEGORIES: str = os.getenv("EVO_TIME_CATEGORIES", "Train Station")
 

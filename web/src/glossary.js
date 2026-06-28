@@ -46,8 +46,24 @@ export const GLOSSARY = {
     text: "LightGBM tree ensemble head; predictions are averaged with the MLP out-of-fold for robustness.",
   },
   openvino: {
-    label: "OpenVINO",
-    text: "Intel inference runtime for optimized CPU execution of the exported Evo model (alternative to ONNX Runtime).",
+    label: "OpenVINO / NCS",
+    text: "Intel software that runs Evo on CPU or on a Neural Compute Stick (NCS1/NCS2) plugged into a local Mac via USB.",
+  },
+  accel_auto: {
+    label: "Auto",
+    text: "Detect a USB Neural Compute Stick (NCS2 preferred, then NCS1). Falls back to CPU if no stick is plugged in.",
+  },
+  accel_cpu: {
+    label: "CPU",
+    text: "Run Evo on the Mac or server CPU via ONNX Runtime or OpenVINO — no USB stick required.",
+  },
+  accel_ncs2: {
+    label: "Neural Compute Stick 2",
+    text: "Intel NCS2 (Myriad X) over USB. Requires local API (python3 main.py) on the Mac with the stick plugged in.",
+  },
+  accel_ncs1: {
+    label: "Neural Compute Stick 1",
+    text: "Original Intel NCS1 (Myriad 2). Older hardware; may need legacy OpenVINO. Local Mac + USB only.",
   },
   onnx: {
     label: "ONNX Runtime",

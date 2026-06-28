@@ -1,4 +1,4 @@
-"""Version-aware Evo model runtime with OpenVINO/ONNX metadata."""
+"""Version-aware Evo model runtime with OpenVINO/ONNX and NCS accelerator support."""
 
 from __future__ import annotations
 
@@ -8,6 +8,13 @@ from pathlib import Path
 from typing import Any, Optional
 
 from config.settings import settings
+from services.evo_accelerator import (
+    accelerator_status_message,
+    get_requested_accelerator,
+    probe_accelerator_status,
+    resolve_openvino_device,
+    set_runtime_accelerator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +30,9 @@ class EvoRuntime:
         self.model_version = model_version
         self._compiled = None
         self._backend: Optional[str] = None
+        self._active_device: Optional[str] = None
+        self._resolved_accelerator: str = "cpu"
+        self._last_load_error: Optional[str] = None
 
     @property
     def is_available(self) -> bool:
@@ -30,7 +40,19 @@ class EvoRuntime:
             self.model_dir / "openvino" / f"{self.model_version}.xml"
         ).exists()
 
-    def _load_openvino(self) -> bool:
+    def reset_runtime(self) -> None:
+        self._compiled = None
+        self._backend = None
+        self._active_device = None
+        self._last_load_error = None
+
+    def set_accelerator(self, value: str) -> dict[str, Any]:
+        set_runtime_accelerator(value)
+        self.reset_runtime()
+        self.ensure_loaded()
+        return self.get_runtime_status()
+
+    def _load_openvino(self, device: str) -> bool:
         xml_path = self.model_dir / "openvino" / f"{self.model_version}.xml"
         if not xml_path.exists():
             return False
@@ -41,12 +63,14 @@ class EvoRuntime:
                 from openvino.runtime import Core
 
             core = Core()
-            self._compiled = core.compile_model(str(xml_path), "CPU")
+            self._compiled = core.compile_model(str(xml_path), device)
             self._backend = "openvino"
-            logger.info("%s loaded via OpenVINO", self.model_version)
+            self._active_device = device
+            logger.info("%s loaded via OpenVINO on %s", self.model_version, device)
             return True
         except Exception as exc:
-            logger.warning("OpenVINO load failed: %s", exc)
+            self._last_load_error = str(exc)
+            logger.warning("OpenVINO load failed on %s: %s", device, exc)
             return False
 
     def _load_onnx(self) -> bool:
@@ -60,17 +84,35 @@ class EvoRuntime:
                 str(onnx_path), providers=["CPUExecutionProvider"]
             )
             self._backend = "onnxruntime"
+            self._active_device = "CPU"
+            self._resolved_accelerator = "cpu"
             logger.info("%s loaded via ONNX Runtime", self.model_version)
             return True
         except Exception as exc:
+            self._last_load_error = str(exc)
             logger.warning("ONNX Runtime load failed: %s", exc)
             return False
 
     def ensure_loaded(self) -> bool:
         if self._compiled is not None:
             return True
-        if settings.EVO_PREFER_OPENVINO and self._load_openvino():
-            return True
+
+        probe = probe_accelerator_status(settings.EVO_ACCELERATOR)
+        requested = get_requested_accelerator(settings.EVO_ACCELERATOR)
+        device, resolved = resolve_openvino_device(requested, probe["myriad_devices"])
+        self._resolved_accelerator = resolved
+
+        use_openvino = settings.EVO_PREFER_OPENVINO or requested in {"ncs1", "ncs2", "auto"}
+        if use_openvino and device:
+            if self._load_openvino(device):
+                return True
+
+        if requested in {"ncs1", "ncs2"}:
+            logger.warning(
+                "Requested %s but MYRIAD device unavailable; falling back to ONNX CPU",
+                requested,
+            )
+
         return self._load_onnx()
 
     def predict(self, features: list[float]) -> Optional[dict[str, float]]:
@@ -97,18 +139,34 @@ class EvoRuntime:
     def get_runtime_status(self) -> dict[str, Any]:
         """Probe load and report which inference backend is active."""
         loaded = self.ensure_loaded()
-        return {
+        probe = probe_accelerator_status(settings.EVO_ACCELERATOR)
+        requested = probe["accelerator_requested"]
+        status = {
             "model_version": self.model_version,
             "available": self.is_available,
             "loaded": loaded,
             "backend": self._backend,
+            "device": self._active_device,
+            "accelerator": self._resolved_accelerator,
+            "accelerator_requested": requested,
             "openvino_connected": self._backend == "openvino",
             "openvino_ir_present": (
                 self.model_dir / "openvino" / f"{self.model_version}.xml"
             ).exists(),
             "onnx_present": (self.model_dir / f"{self.model_version}.onnx").exists(),
             "prefer_openvino": settings.EVO_PREFER_OPENVINO,
+            "last_load_error": self._last_load_error,
+            "status_message": accelerator_status_message(
+                requested=requested,
+                resolved=self._resolved_accelerator,
+                active_device=self._active_device,
+                loaded=loaded,
+                backend=self._backend,
+                myriad_devices=probe["myriad_devices"],
+            ),
         }
+        status.update(probe)
+        return status
 
     def get_visualization(self) -> dict[str, Any]:
         arch_path = self.model_dir / "architecture.json"
@@ -123,6 +181,7 @@ class EvoRuntime:
             "model_version": self.model_version,
             "available": self.is_available,
             "backend": self._backend,
+            "accelerator": self._resolved_accelerator,
             "openvino_connected": self._backend == "openvino",
             "architecture": architecture,
             "metrics": metrics,

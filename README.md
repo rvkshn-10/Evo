@@ -2,7 +2,207 @@
 
 An AI-powered emergency event coordination and broadcast system built with **LangChain**, **FastAPI**, and **OpenAI GPT-4o**. When an emergency event is reported via the REST API, a pipeline of specialized agents automatically logs the event, researches it, downloads media, generates charts, writes news content, assembles a broadcast panel, and produces a HeyGen-ready script — all in the background.
 
+**Evacuation Intelligence dashboard (Evo 1.2):** [https://evac-evo.vercel.app](https://evac-evo.vercel.app) · API repo: [github.com/rvkshn-10/Evo](https://github.com/rvkshn-10/Evo)
+
 ---
+
+## Download & install
+
+### Option A — Git clone (recommended)
+
+```bash
+git clone https://github.com/rvkshn-10/Evo.git
+cd Evo
+```
+
+### Option B — Download ZIP (no Git)
+
+1. Open [https://github.com/rvkshn-10/Evo](https://github.com/rvkshn-10/Evo)
+2. Click **Code** → **Download ZIP**
+3. Unzip and open a terminal in the `Evo` folder
+
+### Backend (API)
+
+```bash
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env              # add API keys as needed
+python3 main.py
+```
+
+API: `http://localhost:8092` · Swagger: `http://localhost:8092/docs`
+
+### Frontend (dashboard UI)
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open **`http://localhost:5173`** — this is required for **Neural Compute Stick** (USB) use. The public Vercel site talks to the cloud server and cannot see your USB stick.
+
+### Production URLs
+
+| Service | URL | Notes |
+|---------|-----|--------|
+| **Dashboard** | [evac-evo.vercel.app](https://evac-evo.vercel.app) | Hosted UI, proxies API |
+| **API** | Oracle VM `:8092` | Backend for Vercel rewrites |
+
+---
+
+## Neural Compute Stick & OpenVINO (step by step)
+
+The dashboard **Inference device** dropdown lets you choose **CPU**, **NCS1**, **NCS2**, or **Auto**. This uses **OpenVINO** software to run Evo on your computer’s CPU or on an Intel **Neural Compute Stick** plugged in via USB.
+
+> **Important:** The stick only works when `python3 main.py` runs on the **same machine** where the stick is plugged in, and you open **`http://localhost:5173`**. The Vercel URL cannot use your USB hardware.
+
+### Before you start (all platforms)
+
+1. Clone or download this repo (see above).
+2. Confirm model files exist:
+   ```text
+   models/evo1.2/evo1.2.onnx
+   models/evo1.2/openvino/evo1.2.xml
+   models/evo1.2/openvino/evo1.2.bin
+   ```
+3. In `.env`:
+   ```env
+   EVO_MODEL_VERSION=evo1.2
+   EVO_PREFER_OPENVINO=true
+   EVO_ACCELERATOR=auto
+   ```
+4. Start API + UI (see Download & install).
+5. In the dashboard: **Run mode** → **Evo 1.2 hybrid (production)**.
+6. Use **Inference device** → pick **Auto**, **NCS2**, or **NCS1**. Click **Setup** if you need help.
+
+| Device | When to use |
+|--------|-------------|
+| **Auto** | Default — detects USB stick if present, else CPU |
+| **CPU** | No stick, or cloud/Oracle server |
+| **NCS2** | Intel Neural Compute Stick 2 (recommended) |
+| **NCS1** | Original Neural Compute Stick (older; limited support) |
+
+---
+
+### macOS
+
+**1. Install Python deps**
+```bash
+cd Evo
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt openvino onnxruntime
+```
+
+**2. Plug in the Neural Compute Stick** (USB). Use a powered hub if the stick resets.
+
+**3. Start the API**
+```bash
+python3 main.py
+```
+
+**4. Start the UI** (new terminal)
+```bash
+cd web && npm install && npm run dev
+```
+
+**5. Connect in the UI**
+- Open `http://localhost:5173`
+- Run mode: **Evo 1.2 hybrid**
+- Inference device: **NCS2** (or **Auto**)
+- Green status dot = stick active. Amber = stick selected but not detected.
+
+**6. Verify from terminal**
+```bash
+curl http://localhost:8092/api/evo/runtime | python3 -m json.tool
+```
+Look for `"device": "MYRIAD.0"` and `"accelerator": "ncs2"`.
+
+**Mac notes:** NCS2 is the best match for current OpenVINO. NCS1 may need an older OpenVINO build.
+
+---
+
+### Windows
+
+**1. Install Python 3.10+** from [python.org](https://www.python.org/downloads/) (check “Add Python to PATH”).
+
+**2. Open Command Prompt or PowerShell**
+```powershell
+cd Evo
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt openvino onnxruntime
+```
+
+**3. Install OpenVINO USB drivers** (for NCS2) if Windows does not recognize the stick — see [Intel OpenVINO docs](https://docs.openvino.ai/) for the latest MYRIAD driver package.
+
+**4. Plug in the Neural Compute Stick**, then start the API:
+```powershell
+python main.py
+```
+
+**5. Frontend** (new terminal):
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+**6. Dashboard:** `http://localhost:5173` → Evo 1.2 → Inference device → **NCS2** or **Auto**.
+
+**7. Verify:**
+```powershell
+curl http://localhost:8092/api/evo/runtime
+```
+
+---
+
+### Linux (Ubuntu / Debian)
+
+**1. Install system packages**
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip git nodejs npm
+```
+
+**2. Clone and install Python deps**
+```bash
+git clone https://github.com/rvkshn-10/Evo.git
+cd Evo
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt openvino onnxruntime
+```
+
+**3. USB permissions for NCS2** (so OpenVINO can see MYRIAD without root):
+```bash
+echo 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", MODE="0666", GROUP="plugdev"' | \
+  sudo tee /etc/udev/rules.d/97-usbboot.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+# Unplug and replug the stick
+```
+
+Add your user to `plugdev` if needed: `sudo usermod -aG plugdev $USER` (log out and back in).
+
+**4. Plug in stick, start API + UI** (same as macOS steps 3–6).
+
+**5. Oracle production VM:** use **CPU** only — no USB passthrough. Keep `EVO_ACCELERATOR=cpu` on the server.
+
+---
+
+### Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| Stick not detected | Plug into USB directly or powered hub; click **Setup** → **Check again** |
+| Still on CPU | Select **NCS2** explicitly; confirm `openvino` installed; restart `python3 main.py` |
+| Vercel site ignores stick | Expected — use **localhost** with local API |
+| Model missing | Ensure `models/evo1.2/` artifacts are present |
+| NCS1 not working | Try NCS2 or CPU; NCS1 needs legacy OpenVINO on many systems |
+
+---
+
 
 ## System Architecture
 
@@ -289,9 +489,11 @@ Import `postman_collection.json` into Postman for four ready-to-run requests sim
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/lenger06/emergency_management_office_ai.git
-cd emergency_management_office_ai
+git clone https://github.com/rvkshn-10/Evo.git
+cd Evo
 ```
+
+See **Download & install** and **Neural Compute Stick & OpenVINO** at the top of this README for full dashboard + USB stick setup.
 
 ### 2. Install dependencies
 ```bash
@@ -512,8 +714,11 @@ Requires `OPENAI_API_KEY` in `.env`. PeopleSense uses placeholder mode until a r
 
 After starting the server, open:
 
-- **Dashboard UI:** `http://localhost:8092/`
+- **Local UI (dev):** `http://localhost:5173` (run `cd web && npm run dev`)
+- **Production UI:** [https://evac-evo.vercel.app](https://evac-evo.vercel.app)
+- **API (local):** `http://localhost:8092/`
 - **Snapshot API:** `GET /api/dashboard`
+- **Inference device:** `GET /api/evo/runtime` · `POST /api/evo/accelerator`
 - **Sync NOAA data:** `POST /api/alerts/sync`
 
 ### Key endpoints
