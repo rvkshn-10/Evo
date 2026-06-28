@@ -5,6 +5,14 @@
   "outputDirectory": "web/dist",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "http://163.192.61.140:8092/api/:path*"
+    },
+    {
+      "source": "/emergency/:path*",
+      "destination": "http://163.192.61.140:8092/emergency/:path*"
+    },
+    {
       "source": "/backend/:path*",
       "destination": "http://163.192.61.140:8092/:path*"
     },
