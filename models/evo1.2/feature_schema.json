@@ -1,0 +1,136 @@
+{
+  "model_version": "evo1.2",
+  "input_name": "features",
+  "input_dtype": "float32",
+  "numeric_features": [
+    "occupancy_log_scaled",
+    "density_scaled",
+    "severity_score_scaled",
+    "hazard_magnitude_log_scaled",
+    "hazard_distance_log_scaled",
+    "hazard_depth_km_scaled",
+    "occupancy_density_interaction_scaled",
+    "capacity_utilization_scaled",
+    "real_hazard_join_flag_scaled",
+    "synthetic_augmentation_flag_scaled"
+  ],
+  "categorical_features": {
+    "category": [
+      "Train Station",
+      "Office Building",
+      "Stadium"
+    ],
+    "scenario": [
+      "Electrical Fire",
+      "Tunnel Smoke",
+      "Sudden Overcrowding",
+      "Panic Chain Reaction",
+      "Platform Fire",
+      "Station Flooding",
+      "Standard Evacuation Drill",
+      "Blockage"
+    ],
+    "event_type": [
+      "fire",
+      "flood",
+      "earthquake",
+      "tornado",
+      "tsunami",
+      "other"
+    ],
+    "hazard_source": [
+      "none",
+      "noaa_nws",
+      "usgs",
+      "gdacs",
+      "nasa_firms",
+      "fema_ipaws"
+    ]
+  },
+  "feature_order": [
+    "occupancy_log_scaled",
+    "density_scaled",
+    "severity_score_scaled",
+    "hazard_magnitude_log_scaled",
+    "hazard_distance_log_scaled",
+    "hazard_depth_km_scaled",
+    "occupancy_density_interaction_scaled",
+    "capacity_utilization_scaled",
+    "real_hazard_join_flag_scaled",
+    "synthetic_augmentation_flag_scaled",
+    "category=Train Station",
+    "category=Office Building",
+    "category=Stadium",
+    "scenario=Electrical Fire",
+    "scenario=Tunnel Smoke",
+    "scenario=Sudden Overcrowding",
+    "scenario=Panic Chain Reaction",
+    "scenario=Platform Fire",
+    "scenario=Station Flooding",
+    "scenario=Standard Evacuation Drill",
+    "scenario=Blockage",
+    "event_type=fire",
+    "event_type=flood",
+    "event_type=earthquake",
+    "event_type=tornado",
+    "event_type=tsunami",
+    "event_type=other",
+    "hazard_source=none",
+    "hazard_source=noaa_nws",
+    "hazard_source=usgs",
+    "hazard_source=gdacs",
+    "hazard_source=nasa_firms",
+    "hazard_source=fema_ipaws"
+  ],
+  "normalization": {
+    "means": [
+      6.702040930171326,
+      0.5431018660140728,
+      0.5044232181095423,
+      1.0115507936048322,
+      4.867125401489835,
+      0.0,
+      3.6426995306603263,
+      0.5113312022025139,
+      1.0,
+      0.749311716121138
+    ],
+    "scales": [
+      0.8711887024612173,
+      0.2599543734106309,
+      0.2689531010515265,
+      0.03765042431887477,
+      0.011545634261675297,
+      1.0,
+      1.8183190255586381,
+      0.2854276069816038,
+      1.0,
+      0.43340935408079834
+    ],
+    "density_missing_value": 0.53,
+    "category_capacity": {
+      "Train Station": 2000.0,
+      "Office Building": 1000.0,
+      "Stadium": 60000.0
+    }
+  },
+  "live_join": {
+    "radius_km": 250,
+    "labeled_row_location_proxy": "deterministic category-compatible FCUSD monitoring spot",
+    "unlabeled_seed_used_for": "k-NN pseudo-label training only; excluded from metrics"
+  },
+  "synthetic_hazard_rule": {
+    "severity_variants": [
+      0.3,
+      0.6,
+      0.9
+    ],
+    "success_adjustment": "clip(original_success_pct - severity_score * 3, 0, 100)",
+    "explicit_flag": "synthetic_augmentation_flag_scaled",
+    "variants_grouped_during_cv": true
+  },
+  "outputs": [
+    "evacuation_success_pct",
+    "evacuation_time_min"
+  ]
+}

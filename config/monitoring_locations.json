@@ -1,7 +1,22 @@
 {
   "region": "Sacramento / FCUSD",
-  "description": "Monitoring spots for evacuation modeling in the Folsom Cordova area",
+  "description": "FCUSD PeopleSense monitoring sites — Raspberry Pi edge devices report occupancy into PeopleSense; coords should match deployed Pi locations.",
+  "org": "FCUSD",
+  "contact": "ravipothanngaari@gmail.com",
   "spots": [
+    {
+      "id": "vista-del-lago",
+      "name": "Vista del Lago High School",
+      "category": "Office Building",
+      "lat": 38.6581,
+      "lon": -121.1412,
+      "default_occupancy": 2100,
+      "default_density": 0.45,
+      "radius_m": 400,
+      "peoplesense_edge": "raspberry_pi",
+      "peoplesense_match": { "place_id": "FCUSD" },
+      "peoplesense_match_radius_m": 2000
+    },
     {
       "id": "folsom-high",
       "name": "Folsom High School",
@@ -10,7 +25,10 @@
       "lon": -121.1761,
       "default_occupancy": 1800,
       "default_density": 0.42,
-      "radius_m": 350
+      "radius_m": 350,
+      "peoplesense_edge": "raspberry_pi",
+      "peoplesense_match": { "place_id": "FCUSD", "group_contains": "FHS" },
+      "peoplesense_match_radius_m": 3000
     },
     {
       "id": "cordova-park",
@@ -20,7 +38,10 @@
       "lon": -121.3026,
       "default_occupancy": 950,
       "default_density": 0.58,
-      "radius_m": 400
+      "radius_m": 400,
+      "peoplesense_edge": "raspberry_pi",
+      "peoplesense_match": { "place_id": "FCUSD", "group_contains": "Cordova" },
+      "peoplesense_match_radius_m": 2500
     },
     {
       "id": "sac-state",
@@ -30,17 +51,21 @@
       "lon": -121.4246,
       "default_occupancy": 3200,
       "default_density": 0.48,
-      "radius_m": 500
+      "radius_m": 500,
+      "peoplesense_match": { "place_ids": ["SAC-STATE", "CSU", "SAC-STATE-VIRTUAL"] },
+      "peoplesense_match_radius_m": 800
     },
     {
       "id": "arco-arena",
       "name": "ARCO Arena Shelter Zone",
       "category": "Stadium",
       "lat": 38.6492,
-      "lon": -121.5180,
+      "lon": -121.518,
       "default_occupancy": 5200,
       "default_density": 0.72,
-      "radius_m": 600
+      "radius_m": 600,
+      "peoplesense_match": { "place_id": "All Trains" },
+      "peoplesense_match_radius_m": 10000
     },
     {
       "id": "folsom-dam",
@@ -50,7 +75,9 @@
       "lon": -121.1653,
       "default_occupancy": 1400,
       "default_density": 0.35,
-      "radius_m": 450
+      "radius_m": 450,
+      "peoplesense_match": { "place_id": "FCUSD" },
+      "peoplesense_match_radius_m": 5000
     }
   ]
 }

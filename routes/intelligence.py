@@ -19,6 +19,7 @@ from services.run_modes import RunMode, execute_run_mode_sync
 from services.evacuation_predictor import EvacuationPredictor
 from services.fema_ipaws_client import FEMAIPAWSClient
 from services.government_feed_sync import GovernmentFeedSync
+from services.hazard_feature_builder import build_training_seed_rows, write_training_seed
 from services.noaa_client import NOAAClient
 from services.peoplesense_client import PeopleSenseClient
 from services.peoplesense_deployment import PeopleSenseDeploymentService
@@ -204,14 +205,36 @@ async def sync_government_feeds(
     background_tasks.add_task(_feed_sync.sync_all, area=area, auto_deploy=auto_deploy)
     return {
         "status": "accepted",
-        "message": "Government feed sync started (USGS, FEMA IPAWS, NOAA)",
+        "message": "Government feed sync started (NOAA, USGS, FEMA, GDACS, NASA FIRMS)",
         "area": area,
         "auto_deploy": auto_deploy,
     }
 
 
+@router.get("/feeds/sources")
+async def get_hazard_feed_sources():
+    """Catalog of integrated public hazard data sources."""
+    from pathlib import Path
+    import json
+
+    path = settings.PROJECT_ROOT / "data" / "reference" / "hazard_feed_sources.json"
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {"sources": [], "note": "hazard_feed_sources.json missing"}
+
+
+@router.post("/training/hazard-seed")
+async def refresh_hazard_training_seed(
+    persist: bool = Query(default=True, description="Write data/processed/hazard_live_seed.json"),
+):
+    """Pull live NOAA/USGS/GDACS/FIRMS features for FCUSD monitoring spots."""
+    if persist:
+        return write_training_seed()
+    return build_training_seed_rows()
+
+
 @router.get("/dashboard")
-async def get_dashboard(
+def get_dashboard(
     area: Optional[str] = Query(default=None, description="US state code, e.g. CA"),
     lat: Optional[float] = Query(default=None),
     lon: Optional[float] = Query(default=None),
@@ -256,20 +279,56 @@ async def analyze_alert(alert_id: str):
 
 
 @router.get("/peoplesense/zones")
-async def get_peoplesense_zones():
+def get_peoplesense_zones():
     readings = [
         _peoplesense.get_zone_occupancy(
             lat=spot["lat"],
             lon=spot["lon"],
             radius_m=spot.get("radius_m", 400),
             zone_name=spot["name"],
+            spot=spot,
         )
         for spot in _processor.locations
     ]
     return {
         "mode": "placeholder" if _peoplesense.is_placeholder else "live",
+        "source": "get_api" if _peoplesense.occupancy_api_enabled else "event_api",
+        "occupancy_url": settings.PEOPLESENSE_OCCUPANCY_URL,
+        "event_url": settings.PEOPLESENSE_EVENT_URL,
+        "cache_ttl_seconds": settings.PEOPLESENSE_CACHE_TTL_SECONDS,
         "zones": readings,
     }
+
+
+@router.get("/peoplesense/occupancy")
+def get_peoplesense_occupancy(filter: str = "ALL"):
+    """Fetch cached PeopleSense occupancy database (respects 60s rate limit)."""
+    payload = _peoplesense.fetch_all_occupancy(filter_value=filter)
+    return {
+        "filter": payload.get("filter", filter),
+        "count": payload.get("count", len(payload.get("data") or [])),
+        "fetched_at": payload.get("fetchedAt"),
+        "cache_hit": payload.get("cache_hit", False),
+        "cache_age_seconds": payload.get("cache_age_seconds"),
+        "mode": payload.get("mode", "live" if not _peoplesense.is_placeholder else "placeholder"),
+        "data": payload.get("data") or [],
+    }
+
+
+class PeopleSenseEventRequest(BaseModel):
+    occupancy_xml: str = Field(alias="OccupancyXML")
+    message: str = Field(alias="Message")
+
+    model_config = {"populate_by_name": True}
+
+
+@router.post("/peoplesense/event")
+async def post_peoplesense_event(request: PeopleSenseEventRequest):
+    """Forward OccupancyXML + Message to the FCUSD PeopleSense event API."""
+    return _peoplesense.post_event(
+        occupancy_xml=request.occupancy_xml,
+        message=request.message,
+    )
 
 
 @router.post("/evacuation/predict")
@@ -361,7 +420,7 @@ async def sync_alerts(
     messages = {
         "sync": "Sync only — NOAA/USGS/FEMA + predictions (no LLM)",
         "external_ai": "Sync + Gemini/OpenAI summary with auto-failover",
-        "evo": "Sync + Evo 1.0 OpenVINO predictions",
+        "evo": "Sync + Evo 1.2 hybrid predictions (ONNX/OpenVINO)",
         "broadcast": "Full 7-step broadcast pipeline",
     }
     return {

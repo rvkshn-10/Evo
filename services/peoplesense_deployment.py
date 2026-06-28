@@ -165,35 +165,37 @@ class PeopleSenseDeploymentService:
         }
 
     def _deploy_live(self, payload: dict[str, Any]) -> dict[str, Any]:
-        try:
-            response = self.session.post(
-                f"{self.client.base_url}/v1/zones/deploy",
-                json={
+        from services.peoplesense_xml import build_occupancy_xml
+
+        xml = build_occupancy_xml(
+            [
+                {
+                    "id": payload["zone_id"],
                     "name": payload["name"],
                     "lat": payload["lat"],
                     "lon": payload["lon"],
                     "radius_m": payload["radius_m"],
-                    "occupancy": payload.get("occupancy"),
-                    "metadata": {
-                        "source_alert_id": payload.get("source_alert_id"),
-                        "feed_source": payload.get("feed_source"),
-                    },
-                },
-                headers={"Authorization": f"Bearer {self.client.api_key}"},
-                timeout=20,
-            )
-            response.raise_for_status()
-            data = response.json()
-            return {
-                **payload,
-                "status": "deployed",
-                "peoplesense_zone_id": data.get("zone_id", payload["zone_id"]),
-                "deployed_at": datetime.now(timezone.utc).isoformat(),
-                "mode": "live",
-            }
-        except requests.RequestException as exc:
-            logger.warning("PeopleSense deploy API failed, recording placeholder: %s", exc)
+                    "occupancy_count": payload.get("occupancy"),
+                }
+            ]
+        )
+        message = (
+            f"FCUSD deploy monitoring zone: {payload['name']} "
+            f"(source={payload.get('feed_source')}, alert={payload.get('source_alert_id')})"
+        )
+        result = self.client.post_event(occupancy_xml=xml, message=message)
+        if result.get("status") == "error":
+            logger.warning("PeopleSense deploy event failed: %s", result.get("error"))
             return self._record_placeholder_deployment(payload)
+
+        return {
+            **payload,
+            "status": "deployed",
+            "peoplesense_zone_id": payload["zone_id"],
+            "deployed_at": datetime.now(timezone.utc).isoformat(),
+            "mode": "live",
+            "peoplesense_response": result,
+        }
 
     def _record_placeholder_deployment(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {

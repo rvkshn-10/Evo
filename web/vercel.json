@@ -3,6 +3,10 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
+    {
+      "source": "/backend/:path*",
+      "destination": "http://163.192.61.140:8092/:path*"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

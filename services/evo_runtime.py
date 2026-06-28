@@ -1,4 +1,4 @@
-"""Evo 1.0 model runtime — OpenVINO / ONNX with visualization metadata."""
+"""Version-aware Evo model runtime with OpenVINO/ONNX metadata."""
 
 from __future__ import annotations
 
@@ -11,25 +11,27 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-MODEL_DIR = settings.PROJECT_ROOT / "models" / "evo1.0"
+MODEL_VERSION = settings.EVO_MODEL_VERSION
+MODEL_DIR = settings.PROJECT_ROOT / "models" / MODEL_VERSION
 
 
 class EvoRuntime:
-    """Load Evo 1.0 artifacts when present; otherwise report unavailable."""
+    """Load the configured Evo artifacts when present; otherwise report unavailable."""
 
-    def __init__(self, model_dir: Path = MODEL_DIR):
+    def __init__(self, model_dir: Path = MODEL_DIR, model_version: str = MODEL_VERSION):
         self.model_dir = model_dir
+        self.model_version = model_version
         self._compiled = None
         self._backend: Optional[str] = None
 
     @property
     def is_available(self) -> bool:
-        return (self.model_dir / "evo1.0.onnx").exists() or (
-            self.model_dir / "openvino" / "evo1.0.xml"
+        return (self.model_dir / f"{self.model_version}.onnx").exists() or (
+            self.model_dir / "openvino" / f"{self.model_version}.xml"
         ).exists()
 
     def _load_openvino(self) -> bool:
-        xml_path = self.model_dir / "openvino" / "evo1.0.xml"
+        xml_path = self.model_dir / "openvino" / f"{self.model_version}.xml"
         if not xml_path.exists():
             return False
         try:
@@ -38,14 +40,14 @@ class EvoRuntime:
             core = Core()
             self._compiled = core.compile_model(str(xml_path), "CPU")
             self._backend = "openvino"
-            logger.info("Evo 1.0 loaded via OpenVINO")
+            logger.info("%s loaded via OpenVINO", self.model_version)
             return True
         except Exception as exc:
             logger.warning("OpenVINO load failed: %s", exc)
             return False
 
     def _load_onnx(self) -> bool:
-        onnx_path = self.model_dir / "evo1.0.onnx"
+        onnx_path = self.model_dir / f"{self.model_version}.onnx"
         if not onnx_path.exists():
             return False
         try:
@@ -55,7 +57,7 @@ class EvoRuntime:
                 str(onnx_path), providers=["CPUExecutionProvider"]
             )
             self._backend = "onnxruntime"
-            logger.info("Evo 1.0 loaded via ONNX Runtime")
+            logger.info("%s loaded via ONNX Runtime", self.model_version)
             return True
         except Exception as exc:
             logger.warning("ONNX Runtime load failed: %s", exc)
@@ -96,7 +98,7 @@ class EvoRuntime:
         schema = _read_json(schema_path) or {}
 
         return {
-            "model_version": settings.EVO_MODEL_VERSION,
+            "model_version": self.model_version,
             "available": self.is_available,
             "backend": self._backend,
             "openvino_connected": self._backend == "openvino",
@@ -118,7 +120,7 @@ def _read_json(path: Path) -> Optional[dict[str, Any]]:
 
 def _default_architecture() -> dict[str, Any]:
     return {
-        "name": "Evo 1.0",
+        "name": MODEL_VERSION,
         "layers": [
             {"id": "in", "type": "input", "label": "Features\n(occupancy, density, hazard)"},
             {"id": "h1", "type": "dense", "label": "Dense 64\nReLU + Dropout"},
@@ -132,7 +134,7 @@ def _default_architecture() -> dict[str, Any]:
 def _placeholder_metrics() -> dict[str, Any]:
     return {
         "status": "awaiting_training",
-        "message": "Train Evo 1.0 in Colab and commit models/evo1.0/metrics.json",
+        "message": f"Train {MODEL_VERSION} in Colab and add models/{MODEL_VERSION}/metrics.json",
         "train_loss": [],
         "val_loss": [],
         "val_mae_success_pct": None,

@@ -8,7 +8,7 @@ as early-warning candidates for automated downstream action.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
 
 import requests
@@ -86,6 +86,38 @@ class USGSClient:
         return [
             self._normalize_feature(feature, source_feed="fdsn")
             for feature in features
+        ]
+
+    def get_nearby_earthquakes(
+        self,
+        *,
+        lat: float,
+        lon: float,
+        radius_km: float = 250.0,
+        days: int = 90,
+        min_magnitude: float = 1.5,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Query recent local earthquakes for training-feature history."""
+        params = {
+            "format": "geojson",
+            "latitude": lat,
+            "longitude": lon,
+            "maxradiuskm": min(radius_km, 20001.6),
+            "starttime": (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat(),
+            "minmagnitude": min_magnitude,
+            "orderby": "time",
+            "limit": min(limit, 20000),
+        }
+        try:
+            response = self.session.get(USGS_FDSN_BASE, params=params, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            logger.error("USGS nearby-history request failed: %s", exc)
+            return []
+        return [
+            self._normalize_feature(feature, source_feed="fdsn_nearby_90d")
+            for feature in response.json().get("features", [])
         ]
 
     def get_earthquake_early_warning_candidates(

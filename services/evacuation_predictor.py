@@ -31,6 +31,9 @@ CATEGORY_ALIASES = {
     "school": "Office Building",
 }
 
+# Evo 1.2 validation: time head reliable only on Train Station (Office MAE ~19 min).
+EVO_TIME_CATEGORIES_DEFAULT = ("Train Station",)
+
 
 class EvacuationPredictor:
     """Predict evacuation success rate and time from historical reference records."""
@@ -40,10 +43,13 @@ class EvacuationPredictor:
         self.records = self._load_records()
         self.use_evo = use_evo
         self._evo = None
+        self._evo_schema: Optional[dict[str, Any]] = None
         if use_evo:
             from services.evo_runtime import get_evo_runtime
+            from services.evo_features import load_feature_schema
 
             self._evo = get_evo_runtime()
+            self._evo_schema = load_feature_schema()
 
     def _load_records(self) -> list[dict[str, Any]]:
         if not self.reference_path.exists():
@@ -82,31 +88,87 @@ class EvacuationPredictor:
         scenario: Optional[str] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None,
+        hazard: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         scenario = scenario or SCENARIO_BY_EVENT.get(event_type, "Standard Evacuation Drill")
         category = CATEGORY_ALIASES.get(category.lower(), category)
+        hazard = hazard or {}
 
-        if self.use_evo and self._evo and self._evo.is_available:
-            evo_out = self._predict_evo(
-                occupancy=occupancy,
-                density=density,
-                category=category,
-                scenario=scenario,
-                event_type=event_type,
-            )
-            if evo_out:
-                evo_out.update({
-                    "spot_id": spot_id,
-                    "name": name,
-                    "category": category,
-                    "lat": lat,
-                    "lon": lon,
-                    "event_type": event_type,
-                    "scenario": scenario,
-                    "inputs": {"occupancy": occupancy, "density": density},
-                })
-                return evo_out
+        knn = self._predict_knn(
+            spot_id=spot_id,
+            name=name,
+            category=category,
+            occupancy=occupancy,
+            density=density,
+            event_type=event_type,
+            scenario=scenario,
+            lat=lat,
+            lon=lon,
+        )
 
+        if not (self.use_evo and self._evo and self._evo.is_available):
+            return knn
+
+        evo_out = self._predict_evo(
+            occupancy=occupancy,
+            density=density,
+            category=category,
+            scenario=scenario,
+            event_type=hazard.get("event_type") or event_type,
+            hazard=hazard,
+        )
+        if not evo_out:
+            return knn
+
+        time_categories = self._evo_time_categories()
+        use_evo_time = category in time_categories
+        hybrid = settings.EVO_HYBRID_MODE
+
+        if hybrid:
+            result = {
+                **knn,
+                "predicted_evacuation_success_pct": knn["predicted_evacuation_success_pct"],
+                "predicted_evacuation_rate": knn["predicted_evacuation_rate"],
+                "risk_level": knn["risk_level"],
+                "predicted_evacuation_time_min": (
+                    evo_out["predicted_evacuation_time_min"]
+                    if use_evo_time
+                    else knn["predicted_evacuation_time_min"]
+                ),
+                "model": f"{settings.EVO_MODEL_VERSION}_hybrid",
+                "inference_mode": "hybrid",
+                "production_approved": False,
+                "evo_time_source": "evo" if use_evo_time else "knn_category_guard",
+                "evo_success_source": "knn",
+            }
+        else:
+            result = {**evo_out, "inference_mode": "evo_full", "production_approved": False}
+
+        result.update({
+            "spot_id": spot_id,
+            "name": name,
+            "category": category,
+            "lat": lat,
+            "lon": lon,
+            "event_type": event_type,
+            "scenario": scenario,
+            "inputs": {"occupancy": occupancy, "density": density},
+        })
+        return result
+
+    def _predict_knn(
+        self,
+        *,
+        spot_id: str,
+        name: str,
+        category: str,
+        occupancy: int,
+        density: float,
+        event_type: str,
+        scenario: str,
+        lat: Optional[float],
+        lon: Optional[float],
+    ) -> dict[str, Any]:
         neighbors = self._nearest_neighbors(
             occupancy=occupancy,
             density=density,
@@ -161,8 +223,13 @@ class EvacuationPredictor:
         alert: dict[str, Any],
         spots: list[dict[str, Any]],
         occupancy_by_spot: Optional[dict[str, dict[str, Any]]] = None,
+        hazard_by_spot: Optional[dict[str, dict[str, Any]]] = None,
     ) -> list[dict[str, Any]]:
+        from services.evo_features import hazard_context_from_alert
+
         occupancy_by_spot = occupancy_by_spot or {}
+        hazard_by_spot = hazard_by_spot or {}
+        alert_hazard = hazard_context_from_alert(alert)
         event_type = alert.get("event_type", "other")
         predictions = []
 
@@ -171,6 +238,7 @@ class EvacuationPredictor:
             occ = occupancy_by_spot.get(spot_id, {})
             occupancy = int(occ.get("occupancy_count", spot.get("default_occupancy", 500)))
             density = float(occ.get("occupancy_density", spot.get("default_density", 0.4)))
+            hazard = {**alert_hazard, **hazard_by_spot.get(spot_id, {})}
 
             prediction = self.predict_for_spot(
                 spot_id=spot_id,
@@ -181,6 +249,7 @@ class EvacuationPredictor:
                 event_type=event_type,
                 lat=spot.get("lat"),
                 lon=spot.get("lon"),
+                hazard=hazard,
             )
             prediction["alert_id"] = alert.get("id")
             prediction["alert_event"] = alert.get("event")
@@ -197,16 +266,39 @@ class EvacuationPredictor:
         category: str,
         scenario: str,
         event_type: str,
+        hazard: Optional[dict[str, Any]] = None,
     ) -> Optional[dict[str, Any]]:
-        import math
+        from services.evo_features import encode_features
 
-        features = [
-            math.log1p(max(occupancy, 0)),
-            density,
-            hash(category) % 100 / 100.0,
-            hash(scenario) % 100 / 100.0,
-            hash(event_type) % 100 / 100.0,
-        ]
+        hazard = hazard or {}
+        if self._evo_schema:
+            features = encode_features(
+                schema=self._evo_schema,
+                occupancy=occupancy,
+                density=density,
+                category=category,
+                scenario=scenario,
+                event_type=str(hazard.get("event_type") or event_type),
+                severity_score=float(hazard.get("severity_score") or 0.0),
+                hazard_magnitude=float(hazard.get("hazard_magnitude") or 0.0),
+                hazard_distance_km=float(hazard.get("hazard_distance_km") or 250.0),
+                hazard_depth_km=float(hazard.get("hazard_depth_km") or 0.0),
+                hazard_source=str(hazard.get("hazard_source") or "none"),
+                real_hazard_join=bool(hazard.get("real_hazard_join") or hazard.get("hazard_source")),
+                synthetic_augmentation=bool(hazard.get("synthetic_augmentation")),
+            )
+        else:
+            features = [
+                math.log1p(max(occupancy, 0)),
+                density,
+                hash(category) % 100 / 100.0,
+                hash(scenario) % 100 / 100.0,
+                hash(event_type) % 100 / 100.0,
+            ]
+
+        if not features:
+            return None
+
         out = self._evo.predict(features)
         if not out:
             return None
@@ -221,8 +313,14 @@ class EvacuationPredictor:
             "risk_level": risk,
             "confidence": 0.88,
             "reference_samples": 0,
-            "model": settings.EVO_MODEL_VERSION if hasattr(settings, "EVO_MODEL_VERSION") else "evo1.0",
+            "model": settings.EVO_MODEL_VERSION,
         }
+
+    @staticmethod
+    def _evo_time_categories() -> tuple[str, ...]:
+        raw = getattr(settings, "EVO_TIME_CATEGORIES", "Train Station")
+        values = tuple(part.strip() for part in str(raw).split(",") if part.strip())
+        return values or EVO_TIME_CATEGORIES_DEFAULT
 
     def _nearest_neighbors(
         self,

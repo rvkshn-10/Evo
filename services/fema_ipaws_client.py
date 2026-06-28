@@ -52,6 +52,13 @@ class FEMAIPAWSClient:
 
         try:
             response = self.session.get(FEMA_IPAWS_URL, params=params, timeout=30)
+            if response.status_code == 400 and state_fips_prefix:
+                # OpenFEMA currently rejects nested geocode filters on this
+                # endpoint. Fall back to the bounded date query and retain the
+                # records as non-spatial provenance rather than inventing a
+                # California coordinate.
+                params["$filter"] = f"sent ge '{since}'"
+                response = self.session.get(FEMA_IPAWS_URL, params=params, timeout=30)
             response.raise_for_status()
         except requests.RequestException as exc:
             logger.error("FEMA IPAWS request failed: %s", exc)

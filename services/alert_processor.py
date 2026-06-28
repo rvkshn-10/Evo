@@ -10,6 +10,9 @@ from typing import Any, Optional
 
 from config.settings import settings
 from services.evacuation_predictor import EvacuationPredictor
+from services.gdacs_client import GDACSClient
+from services.hazard_feature_builder import enrich_spot_with_hazards
+from services.nasa_firms_client import NASAFIRMSClient
 from services.noaa_client import NOAAClient
 from services.peoplesense_client import PeopleSenseClient
 from services.usgs_client import USGSClient
@@ -25,6 +28,8 @@ class AlertProcessor:
     def __init__(self, *, use_evo: bool = False):
         self.noaa = NOAAClient()
         self.usgs = USGSClient()
+        self.gdacs = GDACSClient()
+        self.firms = NASAFIRMSClient()
         self.peoplesense = PeopleSenseClient()
         self.predictor = EvacuationPredictor(use_evo=use_evo)
         self.locations = self._load_locations()
@@ -45,17 +50,28 @@ class AlertProcessor:
         area = area or settings.DEFAULT_ALERT_AREA
         point = point or (settings.DEFAULT_MAP_LAT, settings.DEFAULT_MAP_LON)
 
+        # Build the live hazard set once per dashboard request. Re-fetching the
+        # same remote feeds for every alert made a single request take minutes
+        # and could monopolize a small single-worker VM.
+        from services.hazard_feature_builder import collect_live_hazards
+
+        live_hazards = collect_live_hazards(lat=point[0], lon=point[1], area=area)
+
         # NWS rejects combined area+point filters; prefer point-based alerts near map center.
         alerts = self.noaa.get_active_alerts(point=point, limit=20)
         if not alerts:
             alerts = self.noaa.get_active_alerts(area=area, limit=20)
-        enriched_alerts = [self.enrich_alert(alert) for alert in alerts[:8]]
+        enriched_alerts = [
+            self.enrich_alert(alert, live_hazards=live_hazards) for alert in alerts[:8]
+        ]
 
         earthquakes = self.usgs.get_significant_earthquakes(min_magnitude=4.0, limit=10)
         eew_candidates = self.usgs.get_earthquake_early_warning_candidates(limit=5)
         enriched_quakes = []
         for quake in earthquakes[:5]:
-            enriched = self.enrich_alert(_quake_as_alert(quake))
+            enriched = self.enrich_alert(
+                _quake_as_alert(quake), live_hazards=live_hazards
+            )
             enriched["source"] = "usgs"
             enriched["hazard_category"] = "earthquake"
             enriched["magnitude"] = quake.get("magnitude")
@@ -66,14 +82,36 @@ class AlertProcessor:
         for alert in enriched_alerts:
             alert["hazard_category"] = _hazard_category(alert)
 
-        heatmap_points = _build_heatmap_points(enriched_alerts, enriched_quakes, eew_candidates)
+        gdacs_events = self.gdacs.get_california_relevant(lat=point[0], lon=point[1], limit=10)
+        wildfires = self.firms.get_california_fires(limit=15)
+
+        hazard_enriched_spots = [
+            enrich_spot_with_hazards(spot, live_hazards) for spot in self.locations
+        ]
+
+        heatmap_points = _build_heatmap_points(
+            enriched_alerts, enriched_quakes, eew_candidates, gdacs_events, wildfires
+        )
 
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "area": area,
             "map_center": {"lat": point[0], "lon": point[1]},
-            "peoplesense_mode": "placeholder" if self.peoplesense.is_placeholder else "live",
+            "peoplesense_mode": (
+                "live"
+                if self.peoplesense.occupancy_api_enabled and not self.peoplesense.is_placeholder
+                else "placeholder"
+            ),
+            "peoplesense_source": (
+                "get_api"
+                if self.peoplesense.occupancy_api_enabled and not self.peoplesense.is_placeholder
+                else "simulated"
+            ),
             "monitoring_spots": self.locations,
+            "hazard_enriched_spots": hazard_enriched_spots,
+            "gdacs_events": gdacs_events,
+            "wildfire_hotspots": wildfires,
+            "feed_sources": _active_feed_sources(self.firms),
             "alerts": enriched_alerts,
             "earthquakes": enriched_quakes,
             "eew_candidates": eew_candidates,
@@ -90,7 +128,12 @@ class AlertProcessor:
             },
         }
 
-    def enrich_alert(self, alert: dict[str, Any]) -> dict[str, Any]:
+    def enrich_alert(
+        self,
+        alert: dict[str, Any],
+        *,
+        live_hazards: Optional[list[dict[str, Any]]] = None,
+    ) -> dict[str, Any]:
         occupancy_overlay = self.peoplesense.get_alert_overlay(
             alert_id=str(alert.get("id")),
             geometry=alert.get("geometry"),
@@ -114,7 +157,17 @@ class AlertProcessor:
             if reading:
                 mapped[spot["id"]] = reading
 
-        predictions = self.predictor.predict_for_alert(alert, self.locations, mapped)
+        from services.hazard_feature_builder import collect_live_hazards, enrich_spot_with_hazards
+
+        if live_hazards is None:
+            live_hazards = collect_live_hazards()
+        hazard_by_spot = {
+            spot["id"]: enrich_spot_with_hazards(spot, live_hazards) for spot in self.locations
+        }
+
+        predictions = self.predictor.predict_for_alert(
+            alert, self.locations, mapped, hazard_by_spot=hazard_by_spot
+        )
         return {
             **alert,
             "peoplesense": occupancy_overlay,
@@ -190,6 +243,8 @@ def _build_heatmap_points(
     alerts: list[dict[str, Any]],
     earthquakes: list[dict[str, Any]],
     eew_candidates: list[dict[str, Any]],
+    gdacs_events: Optional[list[dict[str, Any]]] = None,
+    wildfires: Optional[list[dict[str, Any]]] = None,
 ) -> list[dict[str, Any]]:
     points: list[dict[str, Any]] = []
 
@@ -228,4 +283,37 @@ def _build_heatmap_points(
             "label": alert.get("headline") or alert.get("event") or "Alert",
         })
 
+    for event in gdacs_events or []:
+        lat, lon = event.get("center_lat"), event.get("center_lon")
+        if lat is None or lon is None:
+            continue
+        alert_level = str(event.get("alert_level") or "Green").lower()
+        intensity = 0.9 if alert_level == "red" else 0.7 if alert_level == "orange" else 0.45
+        points.append({
+            "lat": lat,
+            "lon": lon,
+            "intensity": intensity,
+            "hazard_category": _hazard_category(event),
+            "label": event.get("headline") or event.get("event") or "GDACS event",
+        })
+
+    for fire in wildfires or []:
+        lat, lon = fire.get("center_lat"), fire.get("center_lon")
+        if lat is None or lon is None:
+            continue
+        points.append({
+            "lat": lat,
+            "lon": lon,
+            "intensity": float(fire.get("severity_score") or 0.5),
+            "hazard_category": "wildfire",
+            "label": fire.get("headline") or "Wildfire hotspot",
+        })
+
     return points
+
+
+def _active_feed_sources(firms: NASAFIRMSClient) -> list[str]:
+    sources = ["noaa_nws", "usgs", "gdacs"]
+    if firms.is_configured:
+        sources.append("nasa_firms")
+    return sources

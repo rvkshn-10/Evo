@@ -4,47 +4,59 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Emergency Management Office AI — Evacuation Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div>
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+  </div>
+
+  <header class="topbar glass-bar">
+    <div class="brand">
       <p class="eyebrow">Emergency Management Office AI</p>
-      <h1>Evacuation Intelligence Dashboard</h1>
-      <p class="subtitle">NOAA warnings + USGS earthquakes + PeopleSense occupancy</p>
+      <h1>Evacuation Intelligence</h1>
+      <p class="subtitle">NOAA · USGS · GDACS · PeopleSense · Evo 1.2</p>
     </div>
     <div class="actions">
-      <button id="notifyBtn" class="btn" title="Enable desktop notifications">🔔 Notify</button>
-      <label class="run-mode-label">
+      <button id="showEvoBtn" class="btn neo-btn" type="button" title="Open neural network visualization">
+        <span class="btn-icon">◈</span> Neural Network
+      </button>
+      <button id="notifyBtn" class="btn neo-btn" type="button" title="Enable desktop notifications">🔔 Notify</button>
+      <label class="run-mode-label neo-inset">
         <span>Run mode</span>
         <select id="runModeSelect" class="run-mode-select">
           <option value="sync" selected>Sync only (default)</option>
           <option value="external_ai">External AI (Gemini → OpenAI)</option>
-          <option value="evo">Evo 1.0 (OpenVINO)</option>
+          <option value="evo">Evo 1.2 (hybrid)</option>
           <option value="broadcast">Full broadcast</option>
         </select>
       </label>
-      <button id="refreshBtn" class="btn primary">Run Agent</button>
-      <span id="connectionBadge" class="badge">connecting…</span>
-      <span id="modeBadge" class="badge">loading…</span>
+      <button id="refreshBtn" class="btn neo-btn primary" type="button">Run Agent</button>
+      <span id="connectionBadge" class="badge glass-pill">connecting…</span>
+      <span id="modeBadge" class="badge glass-pill">loading…</span>
     </div>
   </header>
 
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <div id="pipelineProgress" class="pipeline-progress hidden" aria-live="polite">
+  <div id="pipelineProgress" class="pipeline-progress glass-panel hidden" aria-live="polite">
     <div class="pipeline-progress-header">
       <span id="pipelineStepLabel">Pipeline running…</span>
       <span id="pipelineEta">Estimating time…</span>
     </div>
-    <div class="progress-track">
+    <div class="progress-track neo-inset">
       <div id="progressBar" class="progress-bar" style="width: 0%"></div>
     </div>
     <p id="pipelinePercent" class="pipeline-percent">0%</p>
   </div>
 
   <div class="app-shell">
-    <aside class="sidebar panel">
+    <aside class="sidebar glass-panel neo-card">
       <h2>Map Layers</h2>
       <p class="sidebar-hint">Toggle hazard types — multiple can be shown at once.</p>
       <div id="filterList" class="filter-list"></div>
@@ -57,7 +69,7 @@
 
     <div class="main-content">
       <main class="layout">
-        <section class="panel map-panel">
+        <section class="panel map-panel glass-panel neo-card">
           <div id="map"></div>
           <div class="map-legend">
             <span class="legend-item heat">● Heatmap intensity</span>
@@ -67,17 +79,17 @@
           </div>
         </section>
 
-        <section class="panel stats-panel">
+        <section class="panel stats-panel glass-panel neo-card">
           <div class="stat-grid">
-            <article class="stat-card">
+            <article class="stat-card neo-inset">
               <h3>Visible Alerts</h3>
               <p id="alertCount" class="stat-value">—</p>
             </article>
-            <article class="stat-card">
+            <article class="stat-card neo-inset">
               <h3>High-Risk Spots</h3>
               <p id="riskCount" class="stat-value">—</p>
             </article>
-            <article class="stat-card">
+            <article class="stat-card neo-inset">
               <h3>Earthquakes</h3>
               <p id="quakeCount" class="stat-value">—</p>
             </article>
@@ -85,25 +97,9 @@
           <div id="alertsList" class="alerts-list"></div>
         </section>
 
-        <section id="evoPanel" class="panel evo-panel hidden">
-          <h2>Evo 1.0 — Neural Network</h2>
-          <p id="evoStatus" class="subtitle">Loading model info…</p>
-          <div class="evo-charts">
-            <div>
-              <h3>Architecture</h3>
-              <canvas id="evoNetworkCanvas" width="520" height="200"></canvas>
-            </div>
-            <div>
-              <h3>Training loss</h3>
-              <canvas id="evoLossCanvas" width="520" height="200"></canvas>
-            </div>
-          </div>
-          <div id="evoMetrics" class="evo-metrics"></div>
-        </section>
-
-        <section class="panel predictions-panel">
+        <section class="panel predictions-panel glass-panel neo-card">
           <h2>Evacuation Predictions</h2>
-          <div class="table-wrap">
+          <div class="table-wrap neo-inset">
             <table>
               <thead>
                 <tr>
@@ -113,6 +109,7 @@
                   <th>Evac Rate</th>
                   <th>Time (min)</th>
                   <th>Risk</th>
+                  <th>Model</th>
                 </tr>
               </thead>
               <tbody id="predictionsBody"></tbody>
@@ -121,10 +118,39 @@
         </section>
       </main>
 
-      <footer class="footer">
+      <footer class="footer glass-bar">
         <span id="lastUpdated">Last updated: —</span>
-        <span id="dataSourceNote">Data: NOAA · USGS · Neon · Evo 1.0 · Vercel</span>
+        <span id="dataSourceNote">FCUSD · Research preview · Evo 1.2 hybrid</span>
       </footer>
+    </div>
+  </div>
+
+  <!-- Evo neural network — shown only when user opens it -->
+  <div id="evoModal" class="evo-modal hidden" role="dialog" aria-modal="true" aria-labelledby="evoModalTitle">
+    <div class="evo-modal-backdrop" id="evoModalBackdrop"></div>
+    <div class="evo-modal-content glass-panel neo-card">
+      <header class="evo-modal-header">
+        <div>
+          <h2 id="evoModalTitle">Evo 1.2 Neural Network</h2>
+          <p id="evoStatus" class="subtitle">Loading model info…</p>
+        </div>
+        <button id="evoModalClose" class="btn neo-btn icon-btn" type="button" aria-label="Close">✕</button>
+      </header>
+
+      <div class="evo-modal-body">
+        <div class="evo-viz-wrap neo-inset">
+          <canvas id="evoNetworkCanvas" width="900" height="420"></canvas>
+          <p class="viz-caption">Dual-head MLP · live hazard features → success % &amp; evacuation time</p>
+        </div>
+
+        <div class="evo-charts-row">
+          <div class="evo-chart-card neo-inset">
+            <h3>Training loss</h3>
+            <canvas id="evoLossCanvas" width="420" height="200"></canvas>
+          </div>
+          <div id="evoMetrics" class="evo-metrics neo-inset"></div>
+        </div>
+      </div>
     </div>
   </div>
 

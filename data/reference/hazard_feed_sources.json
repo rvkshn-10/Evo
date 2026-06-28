@@ -1,0 +1,76 @@
+{
+  "description": "Public hazard feeds integrated into FCUSD Emergency Management Office AI",
+  "note": "Excel evacuation_reference.json is a labeled baseline example; live feeds supply real hazard_magnitude and severity_score.",
+  "sources": [
+    {
+      "id": "noaa_nws",
+      "name": "NOAA / NWS Active Alerts",
+      "status": "integrated",
+      "auth": "User-Agent header only",
+      "url": "https://api.weather.gov/alerts/active",
+      "update_latency": "minutes",
+      "hazards": ["severe_weather", "flood", "fire", "tornado", "tsunami"],
+      "client": "services/noaa_client.py"
+    },
+    {
+      "id": "usgs",
+      "name": "USGS Earthquake Feeds",
+      "status": "integrated",
+      "auth": "none",
+      "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/",
+      "update_latency": "minutes",
+      "hazards": ["earthquake"],
+      "client": "services/usgs_client.py"
+    },
+    {
+      "id": "fema_ipaws",
+      "name": "FEMA OpenFEMA IPAWS Archive",
+      "status": "integrated",
+      "auth": "none",
+      "url": "https://www.fema.gov/api/open/v1/IpawsArchivedAlerts",
+      "update_latency": "~24h archive",
+      "hazards": ["multi-hazard CAP alerts"],
+      "client": "services/fema_ipaws_client.py"
+    },
+    {
+      "id": "gdacs",
+      "name": "GDACS Multi-Hazard Early Warning",
+      "status": "integrated",
+      "auth": "none",
+      "url": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP",
+      "docs": "https://www.gdacs.org/gdacsapi/swagger/index.html",
+      "update_latency": "near real-time (last 4 days)",
+      "hazards": ["earthquake", "flood", "cyclone", "wildfire", "volcano", "drought", "tsunami"],
+      "client": "services/gdacs_client.py"
+    },
+    {
+      "id": "nasa_firms",
+      "name": "NASA FIRMS Active Fire",
+      "status": "integrated_optional_key",
+      "auth": "free MAP_KEY",
+      "register": "https://firms.modaps.eosdis.nasa.gov/api/",
+      "url": "https://firms.modaps.eosdis.nasa.gov/api/area/csv",
+      "update_latency": "3 hours global; sub-minute US/Canada URT",
+      "hazards": ["wildfire"],
+      "client": "services/nasa_firms_client.py",
+      "env": "NASA_FIRMS_MAP_KEY"
+    },
+    {
+      "id": "peoplesense",
+      "name": "PeopleSense FCUSD Event API",
+      "status": "integrated",
+      "auth": "x-api-key header",
+      "method": "POST",
+      "url": "https://k0i6cg0ob2.execute-api.us-west-2.amazonaws.com/prod/event",
+      "body": {"OccupancyXML": "<xml>...</xml>", "Message": "event text"},
+      "edge_hardware": "Raspberry Pi at FCUSD sites (Vista del Lago, Folsom High, etc.)",
+      "client": "services/peoplesense_client.py",
+      "env": ["PEOPLESENSE_API_KEY", "PEOPLESENSE_EVENT_URL"]
+    }
+  ],
+  "training_data": {
+    "labeled_baseline": "data/processed/evacuation_reference.json",
+    "live_feature_seed": "data/processed/hazard_live_seed.json",
+    "build_command": "python scripts/build_hazard_training_seed.py"
+  }
+}

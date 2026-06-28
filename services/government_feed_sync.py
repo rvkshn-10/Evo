@@ -10,6 +10,8 @@ from typing import Any, Optional
 
 from config.settings import settings
 from services.fema_ipaws_client import FEMAIPAWSClient
+from services.gdacs_client import GDACSClient
+from services.nasa_firms_client import NASAFIRMSClient
 from services.noaa_client import NOAAClient
 from services.peoplesense_deployment import PeopleSenseDeploymentService
 from services.usgs_client import USGSClient
@@ -32,6 +34,8 @@ class GovernmentFeedSync:
         self.usgs = USGSClient()
         self.fema = FEMAIPAWSClient()
         self.noaa = NOAAClient()
+        self.gdacs = GDACSClient()
+        self.firms = NASAFIRMSClient()
         self.deployer = PeopleSenseDeploymentService()
 
     def sync_all(
@@ -49,6 +53,9 @@ class GovernmentFeedSync:
         noaa_alerts = self.noaa.get_active_alerts(point=(lat, lon), limit=15)
         if not noaa_alerts:
             noaa_alerts = self.noaa.get_active_alerts(area=area, limit=15)
+
+        gdacs_events = self.gdacs.get_california_relevant(lat=lat, lon=lon, limit=15)
+        wildfires = self.firms.get_california_fires(limit=20)
 
         deployments = []
         if auto_deploy and settings.PEOPLESENSE_AUTO_DEPLOY:
@@ -70,6 +77,15 @@ class GovernmentFeedSync:
             "eew_candidates": eew_candidates,
             "fema_ipaws_alerts": fema_alerts,
             "noaa_alerts": noaa_alerts,
+            "gdacs_events": gdacs_events,
+            "wildfire_hotspots": wildfires,
+            "feed_sources": [
+                "noaa_nws",
+                "usgs",
+                "fema_ipaws",
+                "gdacs",
+                "nasa_firms" if self.firms.is_configured else "nasa_firms_unconfigured",
+            ],
             "peoplesense_deployments": deployments,
             "peoplesense_status": self.deployer.get_deployment_status(),
         }

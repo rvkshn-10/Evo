@@ -52,8 +52,14 @@ function setConnectionBadge(mode) {
 }
 
 async function fetchDashboard() {
+  const mode = document.getElementById("runModeSelect")?.value || "sync";
+  const params = new URLSearchParams();
+  if (mode === "evo") params.set("use_evo", "true");
+  const query = params.toString();
+  const path = query ? `/api/dashboard?${query}` : "/api/dashboard";
+
   try {
-    const data = await fetchJson(apiUrl("/api/dashboard"));
+    const data = await fetchJson(apiUrl(path));
     if (data) {
       setConnectionBadge("live");
       return data;
@@ -260,13 +266,14 @@ function renderPredictions(snapshot) {
           <td>${(prediction.predicted_evacuation_rate * 100).toFixed(1)}%</td>
           <td>${prediction.predicted_evacuation_time_min}</td>
           <td><span class="${riskClass(prediction.risk_level)}">${prediction.risk_level}</span></td>
+          <td><code>${prediction.model || "—"}</code></td>
         </tr>
       `);
     });
   });
 
   document.getElementById("predictionsBody").innerHTML =
-    rows.join("") || "<tr><td colspan='6'>No predictions for selected filters.</td></tr>";
+    rows.join("") || "<tr><td colspan='7'>No predictions for selected filters.</td></tr>";
 }
 
 function parseMagnitude(quake) {
@@ -399,7 +406,11 @@ function renderSnapshot(snapshot) {
   document.getElementById("quakeCount").textContent = quakes.length;
   document.getElementById("riskCount").textContent = snapshot.summary?.high_risk_spots ?? 0;
   document.getElementById("modeBadge").textContent =
-    snapshot.peoplesense_mode === "live" ? "PeopleSense: Live" : "PeopleSense: Placeholder";
+    snapshot.peoplesense_mode === "live"
+      ? snapshot.peoplesense_source === "get_api"
+        ? "PeopleSense: Live (GET)"
+        : "PeopleSense: Live"
+      : "PeopleSense: Placeholder";
   document.getElementById("lastUpdated").textContent =
     `Last updated: ${new Date(snapshot.generated_at).toLocaleString()}`;
 
@@ -472,6 +483,13 @@ export async function initApp() {
 
   document.getElementById("refreshBtn").addEventListener("click", refresh);
   document.getElementById("notifyBtn").addEventListener("click", enableNotifications);
+  document.getElementById("runModeSelect")?.addEventListener("change", async () => {
+    try {
+      renderSnapshot(await fetchDashboard());
+    } catch (error) {
+      console.error(error);
+    }
+  });
 
   try {
     const [snapshot, pipelineStatus] = await Promise.all([

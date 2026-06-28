@@ -23,9 +23,11 @@ class Settings:
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
     # Evo 1.0 model
-    EVO_MODEL_VERSION: str = os.getenv("EVO_MODEL_VERSION", "evo1.0")
+    EVO_MODEL_VERSION: str = os.getenv("EVO_MODEL_VERSION", "evo1.2")
     EVO_MODEL_REPO: str = os.getenv("EVO_MODEL_REPO", "https://github.com/rvkshn-10/Evo")
     EVO_PREFER_OPENVINO: bool = os.getenv("EVO_PREFER_OPENVINO", "true").lower() == "true"
+    EVO_HYBRID_MODE: bool = os.getenv("EVO_HYBRID_MODE", "true").lower() == "true"
+    EVO_TIME_CATEGORIES: str = os.getenv("EVO_TIME_CATEGORIES", "Train Station")
 
     # CORS — comma-separated extra origins (e.g. Vercel preview URL)
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "")
@@ -33,8 +35,18 @@ class Settings:
     # Search
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
 
-    # PeopleSense crowd analytics (placeholder until credentials are issued)
+    # PeopleSense FCUSD — GET occupancy database + POST event API (x-api-key)
     PEOPLESENSE_API_KEY: str = os.getenv("PEOPLESENSE_API_KEY", "placeholder")
+    PEOPLESENSE_OCCUPANCY_URL: str = os.getenv(
+        "PEOPLESENSE_OCCUPANCY_URL",
+        "https://w8bdwhaps0.execute-api.us-west-2.amazonaws.com/v1/occupancy",
+    )
+    PEOPLESENSE_CACHE_TTL_SECONDS: int = int(os.getenv("PEOPLESENSE_CACHE_TTL_SECONDS", "60"))
+    PEOPLESENSE_EVENT_URL: str = os.getenv(
+        "PEOPLESENSE_EVENT_URL",
+        "https://k0i6cg0ob2.execute-api.us-west-2.amazonaws.com/prod/event",
+    )
+    # Legacy placeholder — unused when PEOPLESENSE_EVENT_URL is set
     PEOPLESENSE_BASE_URL: str = os.getenv(
         "PEOPLESENSE_BASE_URL", "https://api.peoplesense.ai"
     )
@@ -49,6 +61,9 @@ class Settings:
 
     # USGS earthquake early warning (public feeds; ShakeAlert XML requires USGS partnership)
     USGS_EEW_MIN_MAGNITUDE: float = float(os.getenv("USGS_EEW_MIN_MAGNITUDE", "4.0"))
+
+    # NASA FIRMS wildfire hotspots (free MAP_KEY — optional)
+    NASA_FIRMS_MAP_KEY: str = os.getenv("NASA_FIRMS_MAP_KEY", "")
 
     # PeopleSense auto-deployment
     PEOPLESENSE_AUTO_DEPLOY: bool = os.getenv("PEOPLESENSE_AUTO_DEPLOY", "true").lower() == "true"
