@@ -193,6 +193,8 @@ function warnEvo13Research({ onRun = false } = {}) {
     ? "Predictions use internet hazard data and public studies — not FCUSD drill validation. May not be accurate."
     : "Research-only mode. Estimates all sites from enriched reference + live hazards. Use Evo 1.2 hybrid for production.";
   showToast(title, message, "warn");
+}
+
 function warnExternalAiCredits({ onRun = false } = {}) {
   if (!isExternalAiMode()) return;
   const title = onRun ? "Starting External AI run" : "External AI selected";
