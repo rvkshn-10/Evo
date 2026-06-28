@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency Management Office AI — Evacuation Intelligence</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Emergency Management Office AI</p>
+      <h1>Evacuation Intelligence Dashboard</h1>
+      <p class="subtitle">NOAA warnings + PeopleSense occupancy + evacuation rate predictions</p>
+    </div>
+    <div class="actions">
+      <button id="refreshBtn" class="btn primary">Run Agent</button>
+      <span id="modeBadge" class="badge">loading...</span>
+    </div>
+  </header>
+
+  <div id="pipelineProgress" class="pipeline-progress hidden" aria-live="polite">
+    <div class="pipeline-progress-header">
+      <span id="pipelineStepLabel">Pipeline running…</span>
+      <span id="pipelineEta">Estimating time…</span>
+    </div>
+    <div class="progress-track">
+      <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+    </div>
+    <p id="pipelinePercent" class="pipeline-percent">0%</p>
+  </div>
+
+  <main class="layout">
+    <section class="panel map-panel">
+      <div id="map"></div>
+    </section>
+
+    <section class="panel stats-panel">
+      <div class="stat-grid">
+        <article class="stat-card">
+          <h3>Active Alerts</h3>
+          <p id="alertCount" class="stat-value">—</p>
+        </article>
+        <article class="stat-card">
+          <h3>High-Risk Spots</h3>
+          <p id="riskCount" class="stat-value">—</p>
+        </article>
+        <article class="stat-card">
+          <h3>Monitoring Spots</h3>
+          <p id="spotCount" class="stat-value">—</p>
+        </article>
+      </div>
+      <div id="alertsList" class="alerts-list"></div>
+    </section>
+
+    <section class="panel predictions-panel">
+      <h2>Evacuation Predictions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Spot</th>
+              <th>Alert</th>
+              <th>Occupancy</th>
+              <th>Evac Rate</th>
+              <th>Time (min)</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody id="predictionsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span id="lastUpdated">Last updated: —</span>
+    <span>Data: NOAA NWS · PeopleSense (placeholder) · FCUSD reference model</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

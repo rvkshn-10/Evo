@@ -474,3 +474,67 @@ Edit `tools/chart_tool.py`. The chart uses matplotlib with a dark theme (`#1a1a2
 ### Swapping the LLM
 
 All agents initialize `ChatOpenAI(model="gpt-4o", ...)`. To use a different model, update the `model=` parameter in each agent's `__init__`. Claude models can be used via the `langchain-anthropic` package as a drop-in replacement.
+
+---
+
+## Evacuation Intelligence Agent
+
+The centerpiece of this project is an **autonomous AI agent** that monitors government warnings, queries PeopleSense, predicts evacuation rates, and publishes to the website.
+
+**Agent:** `agents/evacuation_intelligence/agent.py`  
+**Trigger:** `POST /api/agent/run` or `POST /api/alerts/sync`
+
+```
+Evacuation Intelligence Agent (GPT-4o)
+    │
+    ├── NOAA/NWS government alerts
+    ├── PeopleSense crowd occupancy (placeholder until API key issued)
+    ├── Evacuation rate model (k-NN over FCUSD reference data)
+    │
+    └── Publishes: dashboard JSON + evacuation_intelligence_report.md
+```
+
+The agent also runs automatically in the main pipeline (Step 2) after the Emergency Coordinator logs an event.
+
+### Run the agent
+
+```bash
+# Autonomous cycle — fetches NOAA, predicts, publishes dashboard
+curl -X POST "http://localhost:8092/api/agent/run?sync=true"
+
+# Or fire-and-forget (runs in background)
+curl -X POST http://localhost:8092/api/alerts/sync
+```
+
+Requires `OPENAI_API_KEY` in `.env`. PeopleSense uses placeholder mode until a real key is configured.
+
+### Dashboard
+
+After starting the server, open:
+
+- **Dashboard UI:** `http://localhost:8092/`
+- **Snapshot API:** `GET /api/dashboard`
+- **Sync NOAA data:** `POST /api/alerts/sync`
+
+### Key endpoints
+
+| Endpoint | Description |
+| -------- | ----------- |
+| `GET /api/dashboard` | Combined NOAA alerts, PeopleSense zones, evacuation predictions |
+| `GET /api/alerts` | Raw NOAA active alerts |
+| `GET /api/alerts/{id}/analysis` | Single alert with occupancy + evacuation model output |
+| `GET /api/peoplesense/zones` | Occupancy for configured monitoring spots |
+| `POST /api/evacuation/predict` | Run evacuation model for a custom spot |
+
+### Configuration
+
+| Variable | Default | Description |
+| -------- | ------- | ----------- |
+| `PEOPLESENSE_API_KEY` | `placeholder` | PeopleSense API key (placeholder returns simulated occupancy) |
+| `DEFAULT_ALERT_AREA` | `CA` | Default NOAA state filter |
+| `DEFAULT_MAP_LAT` / `DEFAULT_MAP_LON` | Sacramento region | Dashboard map center |
+
+Monitoring locations are configured in `config/monitoring_locations.json`.
+
+See `docs/PROJECT.md` for architecture notes and data references.
+

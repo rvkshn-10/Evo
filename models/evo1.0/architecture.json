@@ -1,0 +1,10 @@
+{
+  "name": "Evo 1.0",
+  "layers": [
+    {"id": "in", "type": "input", "label": "Features\n(occupancy, density, hazard)"},
+    {"id": "h1", "type": "dense", "label": "Dense 64\nReLU + Dropout"},
+    {"id": "h2", "type": "dense", "label": "Dense 32\nReLU"},
+    {"id": "out", "type": "output", "label": "success %\n· time min"}
+  ],
+  "edges": [["in", "h1"], ["h1", "h2"], ["h2", "out"]]
+}

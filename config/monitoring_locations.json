@@ -1,0 +1,56 @@
+{
+  "region": "Sacramento / FCUSD",
+  "description": "Monitoring spots for evacuation modeling in the Folsom Cordova area",
+  "spots": [
+    {
+      "id": "folsom-high",
+      "name": "Folsom High School",
+      "category": "Office Building",
+      "lat": 38.6779,
+      "lon": -121.1761,
+      "default_occupancy": 1800,
+      "default_density": 0.42,
+      "radius_m": 350
+    },
+    {
+      "id": "cordova-park",
+      "name": "Cordova Park Transit Hub",
+      "category": "Train Station",
+      "lat": 38.5898,
+      "lon": -121.3026,
+      "default_occupancy": 950,
+      "default_density": 0.58,
+      "radius_m": 400
+    },
+    {
+      "id": "sac-state",
+      "name": "Sacramento State University",
+      "category": "Office Building",
+      "lat": 38.5616,
+      "lon": -121.4246,
+      "default_occupancy": 3200,
+      "default_density": 0.48,
+      "radius_m": 500
+    },
+    {
+      "id": "arco-arena",
+      "name": "ARCO Arena Shelter Zone",
+      "category": "Stadium",
+      "lat": 38.6492,
+      "lon": -121.5180,
+      "default_occupancy": 5200,
+      "default_density": 0.72,
+      "radius_m": 600
+    },
+    {
+      "id": "folsom-dam",
+      "name": "Folsom Dam Recreation Area",
+      "category": "Stadium",
+      "lat": 38.7069,
+      "lon": -121.1653,
+      "default_occupancy": 1400,
+      "default_density": 0.35,
+      "radius_m": 450
+    }
+  ]
+}

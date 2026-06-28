@@ -1,0 +1,8 @@
+{
+  "status": "awaiting_training",
+  "message": "Train in Colab (rvkshn-10/Evo) and replace this file with real metrics.",
+  "train_loss": [],
+  "val_loss": [],
+  "val_mae_success_pct": null,
+  "val_mae_time_min": null
+}

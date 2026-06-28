@@ -3,6 +3,7 @@ Agent registry — lazy-initializes and caches all agent singletons.
 Import get_* functions from here to avoid circular imports.
 """
 from agents.emergency_coordinator.agent import get_coordinator
+from agents.evacuation_intelligence.agent import get_evacuation_intelligence
 from agents.researcher.agent import get_researcher
 from agents.writer.agent import get_writer
 from agents.producer.agent import get_producer
@@ -12,6 +13,7 @@ from agents.panel.fire_chief.agent import get_fire_chief
 
 __all__ = [
     "get_coordinator",
+    "get_evacuation_intelligence",
     "get_researcher",
     "get_writer",
     "get_producer",

@@ -1,0 +1,5 @@
+{
+  "model_version": "evo1.0",
+  "numeric_features": ["occupancy_log", "density", "category_hash", "scenario_hash", "event_type_hash"],
+  "outputs": ["evacuation_success_pct", "evacuation_time_min"]
+}

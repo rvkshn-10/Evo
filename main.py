@@ -1,23 +1,19 @@
 import logging
-import asyncio
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from pathlib import Path
+from typing import Literal
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi import BackgroundTasks, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from config.settings import settings
-from agents.registry import (
-    get_coordinator,
-    get_researcher,
-    get_writer,
-    get_producer,
-    get_script_writer,
-    get_bob,
-    get_fire_chief,
-)
+from routes.intelligence import router as intelligence_router
+from services.pipeline import run_pipeline
+from services.pipeline_status import get_pipeline_status
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -32,6 +28,25 @@ app = FastAPI(
     description="AI-powered emergency event coordination, research, and broadcast system",
     version="1.0.0",
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins(),
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+WEB_DIST = Path(__file__).resolve().parent / "web" / "dist"
+WEB_STATIC = Path(__file__).resolve().parent / "web" / "static"
+WEB_DIR = WEB_DIST if WEB_DIST.exists() else WEB_STATIC
+
+if WEB_DIST.exists() and (WEB_DIST / "assets").is_dir():
+    app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
+else:
+    app.mount("/static", StaticFiles(directory=WEB_STATIC), name="static")
+app.include_router(intelligence_router)
 
 
 # ── Request schema ─────────────────────────────────────────────────────────────
@@ -82,80 +97,6 @@ class EventResponse(BaseModel):
     pipeline_triggered: bool
 
 
-# ── Pipeline orchestration ─────────────────────────────────────────────────────
-async def run_pipeline(event_dict: dict):
-    """
-    Full agent pipeline run in a background thread pool.
-    Order: coordinator → researcher → [panel experts] → writer → producer → script_writer
-    """
-    loop = asyncio.get_event_loop()
-
-    try:
-        # 1. Coordinator — log the event, produce briefing
-        logger.info("[pipeline] Step 1: Emergency Coordinator")
-        coordinator_result = await loop.run_in_executor(
-            None, get_coordinator().process_event, event_dict
-        )
-        event_folder = coordinator_result["event_folder"]
-        logger.info(f"[pipeline] Event folder: {event_folder}")
-
-        # 2. Researcher — internet research + SITREP
-        logger.info("[pipeline] Step 2: Researcher")
-        researcher_result = await loop.run_in_executor(
-            None, get_researcher().research_event, coordinator_result
-        )
-
-        # 3. Panel experts — run relevant experts based on event type
-        event_type = event_dict.get("event_type", "other")
-        logger.info(f"[pipeline] Step 3: Panel experts for event_type={event_type}")
-
-        panel_tasks = []
-        if event_type in ("earthquake", "tsunami"):
-            panel_tasks.append(
-                loop.run_in_executor(
-                    None,
-                    get_bob().provide_commentary,
-                    event_folder,
-                    event_dict,
-                )
-            )
-        if event_type in ("fire", "tsunami", "tornado", "flood", "other"):
-            panel_tasks.append(
-                loop.run_in_executor(
-                    None,
-                    get_fire_chief().provide_commentary,
-                    event_folder,
-                    event_dict,
-                )
-            )
-
-        if panel_tasks:
-            await asyncio.gather(*panel_tasks)
-
-        # 4. Writer — article + blog post
-        logger.info("[pipeline] Step 4: Writer")
-        writer_result = await loop.run_in_executor(
-            None, get_writer().write_content, researcher_result
-        )
-
-        # 5. Producer — determine panel lineup + production brief
-        logger.info("[pipeline] Step 5: Producer")
-        producer_result = await loop.run_in_executor(
-            None, get_producer().produce, writer_result
-        )
-
-        # 6. Script Writer — HeyGen broadcast script
-        logger.info("[pipeline] Step 6: Script Writer")
-        await loop.run_in_executor(
-            None, get_script_writer().write_script, producer_result
-        )
-
-        logger.info(f"[pipeline] Complete for {event_folder}")
-
-    except Exception as e:
-        logger.error(f"[pipeline] Error: {e}", exc_info=True)
-
-
 # ── Routes ─────────────────────────────────────────────────────────────────────
 @app.post("/emergency/event", response_model=EventResponse, status_code=202)
 async def receive_event(event: EmergencyEvent, background_tasks: BackgroundTasks):
@@ -169,6 +110,11 @@ async def receive_event(event: EmergencyEvent, background_tasks: BackgroundTasks
     # Derive the event folder name so we can return it to the caller immediately
     safe_ts = event.timestamp.replace(":", "-").replace(".", "-")[:19]
     event_folder = f"output/{safe_ts}_{event.event_type}"
+
+    tracker = get_pipeline_status()
+    if not tracker.is_running():
+        tracker.start(event.title)
+        tracker.set_step("coordinator", event_folder=event_folder)
 
     background_tasks.add_task(run_pipeline, event_dict)
 
@@ -186,11 +132,25 @@ async def health():
 
 
 @app.get("/")
-async def root():
+async def dashboard():
+    return FileResponse(WEB_DIR / "index.html")
+
+
+@app.get("/api")
+async def api_index():
     return {
         "service": settings.AGENCY_NAME,
         "version": "1.0.0",
         "endpoints": {
+            "GET /": "Evacuation intelligence dashboard",
+            "POST /api/agent/run": "Full emergency pipeline (all agents + broadcast files)",
+            "GET /api/dashboard": "NOAA + PeopleSense + evacuation snapshot",
+            "GET /api/pipeline/status": "Pipeline progress for loading bar",
+            "POST /api/alerts/sync": "Same as Run Agent — full emergency pipeline",
+            "POST /api/event": "Phase 1 simplified event POST (GPS, diameter, occupancy)",
+            "POST /api/feeds/sync": "Sync USGS + FEMA + NOAA and auto-deploy PeopleSense",
+            "GET /api/earthquakes/eew": "Earthquake early-warning candidates",
+            "POST /api/peoplesense/auto-deploy": "Deploy all monitoring spots to PeopleSense",
             "POST /emergency/event": "Submit an emergency event notification",
             "GET /health": "Health check",
             "GET /docs": "Interactive API documentation",
@@ -201,7 +161,7 @@ async def root():
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     try:
-        settings.validate()
+        settings.validate(require_agent_keys=False)
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
         raise SystemExit(1)
