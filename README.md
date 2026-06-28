@@ -50,7 +50,7 @@ Open **`http://localhost:5173`** — this is required for **Neural Compute Stick
 | **Dashboard** | [evac-evo.vercel.app](https://evac-evo.vercel.app) | Hosted UI, proxies API |
 | **API** | Oracle VM `:8092` | Backend for Vercel rewrites |
 
-**Docs:** [Neural Compute Stick setup](docs/NCS_SETUP.md) · [Oracle deploy](docs/ORACLE_SETUP.md) · [PhD deck](docs/Evo_PhD_Deck.pptx) · [Colab notebooks](docs/colab/)
+**Docs:** [Neural Compute Stick setup](docs/NCS_SETUP.md) · [Oracle deploy](docs/ORACLE_SETUP.md) · [Presentation source pack](docs/presentation/) · [Colab notebooks](docs/colab/)
 
 ---
 
