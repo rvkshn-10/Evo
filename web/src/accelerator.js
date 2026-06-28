@@ -17,6 +17,12 @@ function useFixedMenu() {
   return window.matchMedia("(max-width: 960px)").matches;
 }
 
+export function isCloudHostedDashboard() {
+  const host = window.location.hostname.toLowerCase();
+  if (!host || host === "localhost" || host === "127.0.0.1") return false;
+  return true;
+}
+
 export function initAcceleratorPicker({ onChange } = {}) {
   const select = document.getElementById("acceleratorSelect");
   const trigger = document.getElementById("acceleratorTrigger");
@@ -78,6 +84,11 @@ export function initAcceleratorPicker({ onChange } = {}) {
 
   const applyAccelerator = async (value) => {
     if (!ACCELERATOR_LABELS[value]) return;
+    if (isCloudHostedDashboard() && (value === "ncs1" || value === "ncs2")) {
+      closeMenu();
+      if (onChange) await onChange({ blocked_ncs_cloud: true });
+      return;
+    }
     select.value = value;
     syncTriggerLabel();
     closeMenu();

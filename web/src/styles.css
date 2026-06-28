@@ -709,6 +709,23 @@ td code {
   display: none;
 }
 
+.ncs-cloud-warning {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+}
+
+.ncs-cloud-warning.hidden {
+  display: none;
+}
+
+.ncs-cloud-warning code {
+  font-size: 0.85em;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.25);
+}
+
 .evo-local-note {
   color: #a8d4ff;
   background: rgba(91, 141, 239, 0.08);
@@ -1389,6 +1406,11 @@ td code {
   .accelerator-row,
   .run-mode-banner {
     grid-column: 1 / -1;
+  }
+
+  .ncs-cloud-warning {
+    font-size: 0.76rem;
+    line-height: 1.45;
   }
 
   .accelerator-row {

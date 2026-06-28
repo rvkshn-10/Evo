@@ -98,6 +98,9 @@
         <button id="acceleratorHelpBtn" class="btn neo-btn accelerator-help-btn" type="button" title="NCS setup guide">Setup</button>
         <span id="acceleratorStatusDot" class="openvino-dot" aria-hidden="true" title="Device status"></span>
       </div>
+      <p id="ncsCloudWarning" class="run-mode-banner ncs-cloud-warning hidden" role="status">
+        <strong>Neural Compute Stick not available here.</strong> This Vercel site uses the cloud API — there is no USB port for an NCS. Evo runs on <strong>CPU only</strong> in production. For NCS1/NCS2, run <code>python3 main.py</code> on your Mac and open <code>http://localhost:5173</code>.
+      </p>
       <button id="refreshBtn" class="btn neo-btn primary" type="button">Run Agent</button>
       <span id="connectionBadge" class="badge glass-pill">connecting…</span>
       <span id="modeBadge" class="badge glass-pill">loading…</span>

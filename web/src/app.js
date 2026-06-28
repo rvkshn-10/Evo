@@ -1,5 +1,6 @@
 import {
   initAcceleratorPicker,
+  isCloudHostedDashboard,
   setAcceleratorDot,
   syncAcceleratorSelectFromStatus,
 } from "./accelerator.js";
@@ -190,6 +191,14 @@ function updateRunModeBanners() {
   if (isEvo12RunMode() && evo) {
     import("./glossary.js").then(({ initGlossaryTooltips }) => initGlossaryTooltips(evo));
   }
+  updateNcsCloudWarning();
+}
+
+function updateNcsCloudWarning() {
+  const banner = document.getElementById("ncsCloudWarning");
+  if (!banner) return;
+  const show = isCloudHostedDashboard() && isEvo12RunMode();
+  banner.classList.toggle("hidden", !show);
 }
 
 function warnEvo13Research({ onRun = false } = {}) {
@@ -214,6 +223,7 @@ function updateAcceleratorRowVisibility() {
   const row = document.getElementById("acceleratorRow");
   if (!row) return;
   row.classList.toggle("hidden", !isEvo12RunMode());
+  updateNcsCloudWarning();
 }
 
 async function fetchEvoRuntime() {
@@ -269,6 +279,14 @@ async function syncAcceleratorUi({ showGuideIfDisconnected = false } = {}) {
 function initAcceleratorControls() {
   initAcceleratorPicker({
     onChange: async (status) => {
+      if (status?.blocked_ncs_cloud) {
+        showToast(
+          "NCS not available on Vercel",
+          "Neural Compute Stick needs a local Mac API (localhost:5173). This site uses cloud CPU only.",
+          "warn"
+        );
+        return;
+      }
       if (status) {
         setAcceleratorDot(status);
         syncAcceleratorSelectFromStatus(status);
@@ -281,6 +299,15 @@ function initAcceleratorControls() {
             "Neural Compute Stick active",
             status.status_message || `Running on ${status.device}`,
             "ok"
+          );
+        } else if (
+          (status.accelerator_requested === "ncs1" || status.accelerator_requested === "ncs2") &&
+          isCloudHostedDashboard()
+        ) {
+          showToast(
+            "NCS not available on Vercel",
+            "Cloud API has no USB stick — use localhost for NCS. Running on CPU here.",
+            "warn"
           );
         } else if (status.accelerator_requested === "ncs1" || status.accelerator_requested === "ncs2") {
           showToast("Stick not detected", status.status_message || "Plug NCS into USB and try again.", "warn");
