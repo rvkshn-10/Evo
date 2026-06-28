@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<!-- SYNTHETIC DEMO — stadium crowd-release drill snapshot -->
+<Occupancy generated_at="2026-07-31T19:00:00Z" source="synthetic_demo">
+  <Zone id="arco-arena" name="ARCO Arena Shelter Zone" lat="38.6492" lon="-121.518">
+    <Count>4820</Count>
+    <Density>0.68</Density>
+    <Volatility>0.92</Volatility>
+  </Zone>
+</Occupancy>

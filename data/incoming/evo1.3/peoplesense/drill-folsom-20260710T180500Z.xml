@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<!-- SYNTHETIC DEMO — drill-aligned snapshot for mentor feasibility demo only -->
+<Occupancy generated_at="2026-07-10T18:05:00Z" source="synthetic_demo">
+  <Zone id="folsom-high" name="Folsom High School" lat="38.6779" lon="-121.1761">
+    <Count>1625</Count>
+    <Density>0.41</Density>
+    <Volatility>0.58</Volatility>
+  </Zone>
+</Occupancy>

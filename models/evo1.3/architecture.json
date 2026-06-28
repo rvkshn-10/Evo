@@ -1,0 +1,75 @@
+{
+  "name": "Evo 1.2 mlp_lightgbm_oof_average",
+  "model_version": "evo1.3",
+  "selected_model": "mlp_lightgbm_oof_average",
+  "layers": [
+    {
+      "id": "in",
+      "type": "input",
+      "label": "FCUSD + live hazards",
+      "column": 0,
+      "lane": 0.5
+    },
+    {
+      "id": "mlp",
+      "type": "dense",
+      "label": "Dual-head MLP",
+      "column": 1,
+      "lane": 0.3
+    },
+    {
+      "id": "lgbm",
+      "type": "tree",
+      "label": "LightGBM heads",
+      "column": 1,
+      "lane": 0.7
+    },
+    {
+      "id": "select",
+      "type": "dense",
+      "label": "mlp_lightgbm_oof_average",
+      "column": 2,
+      "lane": 0.5
+    },
+    {
+      "id": "success",
+      "type": "output",
+      "label": "success %",
+      "column": 3,
+      "lane": 0.3
+    },
+    {
+      "id": "time",
+      "type": "output",
+      "label": "time min",
+      "column": 3,
+      "lane": 0.7
+    }
+  ],
+  "edges": [
+    [
+      "in",
+      "mlp"
+    ],
+    [
+      "in",
+      "lgbm"
+    ],
+    [
+      "mlp",
+      "select"
+    ],
+    [
+      "lgbm",
+      "select"
+    ],
+    [
+      "select",
+      "success"
+    ],
+    [
+      "select",
+      "time"
+    ]
+  ]
+}

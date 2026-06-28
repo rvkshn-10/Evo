@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<Occupancy generated_at="2026-06-28T17:09:30+00:00" source="fcusd_emergency_management_ai">
+  <Zone id="vista-del-lago" name="Vista del Lago High School" lat="38.6581" lon="-121.1412" radius_m="400" category="Office Building">
+    <Count>2</Count>
+    <Density>0.005</Density>
+    <Volatility>0.45</Volatility>
+  </Zone>
+  <Zone id="folsom-high" name="Folsom High School" lat="38.6779" lon="-121.1761" radius_m="350" category="Office Building">
+    <Count>8</Count>
+    <Density>0.08</Density>
+    <Volatility>0.25</Volatility>
+  </Zone>
+  <Zone id="cordova-park" name="Cordova Park Transit Hub" lat="38.5898" lon="-121.3026" radius_m="400" category="Train Station">
+    <Count>9</Count>
+    <Density>0.09</Density>
+    <Volatility>0.25</Volatility>
+  </Zone>
+  <Zone id="sac-state" name="Sacramento State University" lat="38.5616" lon="-121.4246" radius_m="500" category="Office Building">
+    <Count>1736</Count>
+    <Density>0.226</Density>
+    <Volatility>1.0</Volatility>
+  </Zone>
+  <Zone id="arco-arena" name="ARCO Arena Shelter Zone" lat="38.6492" lon="-121.518" radius_m="600" category="Stadium">
+    <Count>280</Count>
+    <Density>0.35</Density>
+    <Volatility>0.5</Volatility>
+  </Zone>
+  <Zone id="folsom-dam" name="Folsom Dam Recreation Area" lat="38.7069" lon="-121.1653" radius_m="450" category="Stadium">
+    <Count>8</Count>
+    <Density>0.08</Density>
+    <Volatility>0.25</Volatility>
+  </Zone>
+</Occupancy>

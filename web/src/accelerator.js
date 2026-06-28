@@ -4,7 +4,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 export const ACCELERATOR_LABELS = {
   auto: "Auto (detect USB stick)",
-  cpu: "CPU only (ONNX / OpenVINO)",
+  cpu: "CPU only (no USB stick)",
   ncs2: "Neural Compute Stick 2",
   ncs1: "Neural Compute Stick 1",
 };

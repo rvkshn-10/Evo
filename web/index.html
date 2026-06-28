@@ -74,7 +74,7 @@
           <span class="run-mode-picker-label">Inference device</span>
           <select id="acceleratorSelect" class="run-mode-select-native" aria-label="Inference device">
             <option value="auto" selected>Auto (detect USB stick)</option>
-            <option value="cpu">CPU only (ONNX / OpenVINO)</option>
+            <option value="cpu">CPU only (no USB stick)</option>
             <option value="ncs2">Neural Compute Stick 2</option>
             <option value="ncs1">Neural Compute Stick 1</option>
           </select>
@@ -90,7 +90,7 @@
           </button>
           <div id="acceleratorMenu" class="run-mode-menu hidden" role="listbox" aria-label="Inference device options">
             <button type="button" class="run-mode-option glossary-term" data-accelerator="auto" data-glossary-key="accel_auto" role="option">Auto (detect USB stick)</button>
-            <button type="button" class="run-mode-option glossary-term" data-accelerator="cpu" data-glossary-key="accel_cpu" role="option">CPU only (ONNX / OpenVINO)</button>
+            <button type="button" class="run-mode-option glossary-term" data-accelerator="cpu" data-glossary-key="accel_cpu" role="option">CPU only (no USB stick)</button>
             <button type="button" class="run-mode-option glossary-term" data-accelerator="ncs2" data-glossary-key="accel_ncs2" role="option">Neural Compute Stick 2</button>
             <button type="button" class="run-mode-option glossary-term" data-accelerator="ncs1" data-glossary-key="accel_ncs1" role="option">Neural Compute Stick 1</button>
           </div>
@@ -247,8 +247,9 @@
             <strong>Use the local dashboard</strong> — open <code>http://localhost:5173</code> (not Vercel) while the API runs on your Mac.
           </li>
           <li>
-            <strong>Install OpenVINO</strong> (project root terminal):
+            <strong>Install OpenVINO</strong> (driver for NCS — optional on CPU):
             <pre class="code-block">pip install openvino</pre>
+            OpenVINO is Intel’s runtime that routes inference to the <strong>Neural Compute Stick</strong> or CPU. You do not need it on the Vercel site.
           </li>
           <li>
             <strong>Plug in your stick</strong> — NCS2 (recommended) or NCS1 via USB. Use a powered hub if needed.
@@ -265,8 +266,9 @@ models/evo1.2/openvino/evo1.2.bin</pre>
           </li>
         </ol>
         <p class="openvino-note">
-          Without a stick, choose <strong>CPU</strong> or <strong>Auto</strong> — Evo uses ONNX/OpenVINO on CPU.
-          The Vercel URL always hits Oracle cloud (no USB). For NCS, run locally.
+          Without a stick, choose <strong>CPU</strong> or <strong>Auto</strong> — Evo runs on the server CPU.
+          The Vercel URL always hits Oracle cloud (no USB). For NCS, run locally at <code>localhost:5173</code>.
+          See <code>docs/NCS_SETUP.md</code> in the repo.
         </p>
         <div class="openvino-modal-actions">
           <button id="openvinoRecheckBtn" class="btn neo-btn primary" type="button">Check again</button>

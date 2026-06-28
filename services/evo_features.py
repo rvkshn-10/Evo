@@ -76,6 +76,15 @@ def encode_features(
     hazard_source: str = "none",
     real_hazard_join: bool = False,
     synthetic_augmentation: bool = False,
+    peoplesense_count: Optional[float] = None,
+    peoplesense_density: Optional[float] = None,
+    peoplesense_volatility: float = 0.0,
+    peoplesense_sample_age_hours: float = 0.0,
+    peoplesense_observed: bool = True,
+    egress_exit_count: float = 0.0,
+    egress_usable_width_m: float = 0.0,
+    egress_route_length_m: float = 0.0,
+    egress_blockage_fraction: float = 0.0,
 ) -> list[float]:
     if not schema:
         return []
@@ -115,6 +124,23 @@ def encode_features(
         real_flag,
         synthetic_flag,
     ]
+    requested_numeric = schema.get("numeric_features") or []
+    if len(requested_numeric) > len(raw_numeric):
+        ps_count = occ if peoplesense_count is None else max(float(peoplesense_count), 0.0)
+        ps_density = den if peoplesense_density is None else max(0.0, min(1.0, float(peoplesense_density)))
+        raw_numeric.extend(
+            [
+                math.log1p(ps_count),
+                ps_density,
+                max(0.0, float(peoplesense_volatility)),
+                math.log1p(max(0.0, float(peoplesense_sample_age_hours))),
+                1.0 if peoplesense_observed else 0.0,
+                max(0.0, float(egress_exit_count)),
+                max(0.0, float(egress_usable_width_m)),
+                max(0.0, float(egress_route_length_m)),
+                max(0.0, min(1.0, float(egress_blockage_fraction))),
+            ]
+        )
 
     numeric_scaled = []
     for index, value in enumerate(raw_numeric):

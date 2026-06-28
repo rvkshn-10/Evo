@@ -1,0 +1,82 @@
+{
+  "_meta": {
+    "data_kind": "synthetic_demo",
+    "purpose": "Mentor feasibility demo only — replace with FCUSD measured drill outcomes before any production promotion.",
+    "not_for_production": true,
+    "created": "2026-06-28"
+  },
+  "rows": [
+    {
+      "spot_id": "vista-del-lago",
+      "outcome_timestamp": "2026-07-10T18:00:00Z",
+      "scenario": "Standard Evacuation Drill",
+      "category": "Office Building",
+      "evacuation_success_pct": 97.2,
+      "evacuation_time_min": 8.4,
+      "egress_exit_count": 6,
+      "egress_usable_width_m": 10.5,
+      "egress_route_length_m": 180.0,
+      "egress_blockage_fraction": 0.0
+    },
+    {
+      "spot_id": "folsom-high",
+      "outcome_timestamp": "2026-07-10T18:05:00Z",
+      "scenario": "Standard Evacuation Drill",
+      "category": "Office Building",
+      "evacuation_success_pct": 95.8,
+      "evacuation_time_min": 9.1,
+      "egress_exit_count": 5,
+      "egress_usable_width_m": 9.2,
+      "egress_route_length_m": 165.0,
+      "egress_blockage_fraction": 0.0
+    },
+    {
+      "spot_id": "cordova-park",
+      "outcome_timestamp": "2026-07-10T18:10:00Z",
+      "scenario": "Train Station Evacuation",
+      "category": "Train Station",
+      "evacuation_success_pct": 93.5,
+      "evacuation_time_min": 6.2,
+      "egress_exit_count": 4,
+      "egress_usable_width_m": 8.0,
+      "egress_route_length_m": 120.0,
+      "egress_blockage_fraction": 0.0
+    },
+    {
+      "spot_id": "vista-del-lago",
+      "outcome_timestamp": "2026-07-17T18:00:00Z",
+      "scenario": "Blocked Route Drill",
+      "category": "Office Building",
+      "evacuation_success_pct": 88.4,
+      "evacuation_time_min": 12.6,
+      "egress_exit_count": 6,
+      "egress_usable_width_m": 10.5,
+      "egress_route_length_m": 180.0,
+      "egress_blockage_fraction": 0.35
+    },
+    {
+      "spot_id": "folsom-high",
+      "outcome_timestamp": "2026-07-24T18:00:00Z",
+      "scenario": "Fire Alarm Evacuation",
+      "category": "Office Building",
+      "evacuation_success_pct": 91.0,
+      "evacuation_time_min": 10.8,
+      "egress_exit_count": 5,
+      "egress_usable_width_m": 9.2,
+      "egress_route_length_m": 165.0,
+      "egress_blockage_fraction": 0.12
+    },
+    {
+      "spot_id": "arco-arena",
+      "outcome_timestamp": "2026-07-31T19:00:00Z",
+      "scenario": "Stadium Crowd Release",
+      "category": "Stadium",
+      "evacuation_success_pct": 89.7,
+      "evacuation_time_min": 14.5,
+      "egress_exit_count": 12,
+      "egress_usable_width_m": 18.0,
+      "egress_route_length_m": 240.0,
+      "egress_blockage_fraction": 0.08
+    }
+  ]
+}

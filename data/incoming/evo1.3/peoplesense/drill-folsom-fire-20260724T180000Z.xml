@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<!-- SYNTHETIC DEMO — fire-alarm drill snapshot -->
+<Occupancy generated_at="2026-07-24T18:00:00Z" source="synthetic_demo">
+  <Zone id="folsom-high" name="Folsom High School" lat="38.6779" lon="-121.1761">
+    <Count>1755</Count>
+    <Density>0.43</Density>
+    <Volatility>0.85</Volatility>
+  </Zone>
+</Occupancy>

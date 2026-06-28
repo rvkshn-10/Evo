@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<!-- SYNTHETIC DEMO — drill-aligned snapshot for mentor feasibility demo only -->
+<Occupancy generated_at="2026-07-10T18:10:00Z" source="synthetic_demo">
+  <Zone id="cordova-park" name="Cordova Park Transit Hub" lat="38.5898" lon="-121.3026">
+    <Count>890</Count>
+    <Density>0.56</Density>
+    <Volatility>0.71</Volatility>
+  </Zone>
+</Occupancy>

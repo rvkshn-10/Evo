@@ -1,0 +1,182 @@
+{
+  "model_version": "evo1.3",
+  "input_name": "features",
+  "input_dtype": "float32",
+  "numeric_features": [
+    "occupancy_log_scaled",
+    "density_scaled",
+    "severity_score_scaled",
+    "hazard_magnitude_log_scaled",
+    "hazard_distance_log_scaled",
+    "hazard_depth_km_scaled",
+    "occupancy_density_interaction_scaled",
+    "capacity_utilization_scaled",
+    "real_hazard_join_flag_scaled",
+    "synthetic_augmentation_flag_scaled",
+    "peoplesense_count_log_scaled",
+    "peoplesense_density_scaled",
+    "peoplesense_volatility_scaled",
+    "peoplesense_sample_age_hours_log_scaled",
+    "peoplesense_observed_flag_scaled",
+    "egress_exit_count_scaled",
+    "egress_usable_width_m_scaled",
+    "egress_route_length_m_scaled",
+    "egress_blockage_fraction_scaled"
+  ],
+  "categorical_features": {
+    "category": [
+      "Train Station",
+      "Office Building",
+      "Stadium"
+    ],
+    "scenario": [
+      "Electrical Fire",
+      "Tunnel Smoke",
+      "Sudden Overcrowding",
+      "Panic Chain Reaction",
+      "Platform Fire",
+      "Station Flooding",
+      "Standard Evacuation Drill",
+      "Blockage"
+    ],
+    "event_type": [
+      "fire",
+      "flood",
+      "earthquake",
+      "tornado",
+      "tsunami",
+      "other"
+    ],
+    "hazard_source": [
+      "none",
+      "noaa_nws",
+      "usgs",
+      "gdacs",
+      "nasa_firms",
+      "fema_ipaws"
+    ]
+  },
+  "feature_order": [
+    "occupancy_log_scaled",
+    "density_scaled",
+    "severity_score_scaled",
+    "hazard_magnitude_log_scaled",
+    "hazard_distance_log_scaled",
+    "hazard_depth_km_scaled",
+    "occupancy_density_interaction_scaled",
+    "capacity_utilization_scaled",
+    "real_hazard_join_flag_scaled",
+    "synthetic_augmentation_flag_scaled",
+    "peoplesense_count_log_scaled",
+    "peoplesense_density_scaled",
+    "peoplesense_volatility_scaled",
+    "peoplesense_sample_age_hours_log_scaled",
+    "peoplesense_observed_flag_scaled",
+    "egress_exit_count_scaled",
+    "egress_usable_width_m_scaled",
+    "egress_route_length_m_scaled",
+    "egress_blockage_fraction_scaled",
+    "category=Train Station",
+    "category=Office Building",
+    "category=Stadium",
+    "scenario=Electrical Fire",
+    "scenario=Tunnel Smoke",
+    "scenario=Sudden Overcrowding",
+    "scenario=Panic Chain Reaction",
+    "scenario=Platform Fire",
+    "scenario=Station Flooding",
+    "scenario=Standard Evacuation Drill",
+    "scenario=Blockage",
+    "event_type=fire",
+    "event_type=flood",
+    "event_type=earthquake",
+    "event_type=tornado",
+    "event_type=tsunami",
+    "event_type=other",
+    "hazard_source=none",
+    "hazard_source=noaa_nws",
+    "hazard_source=usgs",
+    "hazard_source=gdacs",
+    "hazard_source=nasa_firms",
+    "hazard_source=fema_ipaws"
+  ],
+  "normalization": {
+    "means": [
+      6.683433325117092,
+      0.54282575526396,
+      0.50455096124507,
+      1.0127569723337058,
+      4.8670489888716,
+      0.0,
+      3.628991384094734,
+      0.5081285423659888,
+      1.0,
+      0.7493133963991455,
+      0.02344823962198263,
+      0.529859627708337,
+      0.0022886786695148,
+      0.0,
+      0.003051571559353067,
+      0.020750686603600854,
+      0.0350320415013732,
+      0.5675923100396705,
+      0.00033567287152883745
+    ],
+    "scales": [
+      0.8828526022389115,
+      0.2605405834762815,
+      0.26885687937388575,
+      0.04344719973450552,
+      0.012028874424315326,
+      1.0,
+      1.8168005665273947,
+      0.2929433149270564,
+      1.0,
+      0.43340838752374383,
+      0.4244047492241245,
+      0.006044677237104076,
+      0.04199421218668036,
+      1.0,
+      0.055156681103663355,
+      0.4023841646524653,
+      0.6590924863744485,
+      10.373616776414185,
+      0.009345874202790146
+    ],
+    "density_missing_value": 0.53,
+    "category_capacity": {
+      "Train Station": 2000.0,
+      "Office Building": 1000.0,
+      "Stadium": 60000.0
+    }
+  },
+  "live_join": {
+    "radius_km": 250,
+    "labeled_row_location_proxy": "deterministic category-compatible FCUSD monitoring spot",
+    "unlabeled_seed_used_for": "k-NN pseudo-label training only; excluded from metrics"
+  },
+  "synthetic_hazard_rule": {
+    "severity_variants": [
+      0.3,
+      0.6,
+      0.9
+    ],
+    "success_adjustment": "clip(original_success_pct - severity_score * 3, 0, 100)",
+    "explicit_flag": "synthetic_augmentation_flag_scaled",
+    "variants_grouped_during_cv": true
+  },
+  "outputs": [
+    "evacuation_success_pct",
+    "evacuation_time_min"
+  ],
+  "peoplesense_contract": {
+    "transport": "POST OccupancyXML with x-api-key",
+    "fields": [
+      "Count",
+      "Density",
+      "Volatility",
+      "generated_at"
+    ],
+    "metrics_policy": "only rows joined to real outcomes are metric eligible"
+  }
+}

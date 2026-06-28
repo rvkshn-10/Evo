@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<!-- SYNTHETIC DEMO — drill-aligned snapshot for mentor feasibility demo only -->
+<Occupancy generated_at="2026-07-10T18:00:00Z" source="synthetic_demo">
+  <Zone id="vista-del-lago" name="Vista del Lago High School" lat="38.6581" lon="-121.1412">
+    <Count>1842</Count>
+    <Density>0.44</Density>
+    <Volatility>0.62</Volatility>
+  </Zone>
+</Occupancy>

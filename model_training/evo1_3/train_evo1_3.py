@@ -43,10 +43,17 @@ EGRESS_FEATURES = [
     "egress_route_length_m_scaled",
     "egress_blockage_fraction_scaled",
 ]
+DEMO_SCENARIO_ALIASES = {
+    "Train Station Evacuation": "Standard Evacuation Drill",
+    "Blocked Route Drill": "Blockage",
+    "Fire Alarm Evacuation": "Electrical Fire",
+    "Stadium Crowd Release": "Sudden Overcrowding",
+}
 
 # Version all reused Evo 1.2 components and its Evo 1.1 dependency.
 v12.MODEL_VERSION = MODEL_VERSION
 v12.v11.MODEL_VERSION = MODEL_VERSION
+BASE_HAZARD_PREPROCESSOR = v12.HazardPreprocessor
 
 
 def finite(value: Any, default: float | None = None) -> float | None:
@@ -68,6 +75,11 @@ def parse_timestamp(value: Any) -> datetime | None:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
+
+
+def normalize_training_scenario(value: Any) -> str:
+    text = str(value).strip()
+    return v12.v11.normalize_scenario(DEMO_SCENARIO_ALIASES.get(text, text))
 
 
 def load_monitoring_sites(path: Path) -> dict[str, dict[str, Any]]:
@@ -154,11 +166,14 @@ def load_real_outcomes(path: Path) -> tuple[pd.DataFrame, list[str]]:
         return pd.DataFrame(), [
             "The real-outcome template is documentation only; provide measured drill outcomes"
         ]
+    metadata: dict[str, Any] = {}
     try:
         if path.suffix.lower() == ".csv":
             frame = pd.read_csv(path)
         else:
             payload = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                metadata = payload.get("_meta") or {}
             frame = pd.DataFrame(payload.get("rows", payload) if isinstance(payload, dict) else payload)
     except (OSError, json.JSONDecodeError, pd.errors.ParserError) as exc:
         return pd.DataFrame(), [f"Could not read outcome file: {exc}"]
@@ -184,6 +199,16 @@ def load_real_outcomes(path: Path) -> tuple[pd.DataFrame, list[str]]:
     if missing:
         return pd.DataFrame(), [f"Real outcome file is missing columns: {', '.join(missing)}"]
     errors = []
+    normalized_scenarios = []
+    for value in frame["scenario"]:
+        try:
+            normalized_scenarios.append(normalize_training_scenario(value))
+        except ValueError as exc:
+            normalized_scenarios.append(str(value))
+            errors.append(str(exc))
+    frame["scenario"] = normalized_scenarios
+    frame["synthetic_demo"] = bool(metadata.get("not_for_production"))
+    frame["data_kind"] = str(metadata.get("data_kind") or "measured")
     frame["outcome_timestamp"] = frame["outcome_timestamp"].map(parse_timestamp)
     if frame["outcome_timestamp"].isna().any():
         errors.append("Every real outcome requires an ISO-8601 outcome_timestamp")
@@ -239,6 +264,9 @@ def validate_inputs(args: argparse.Namespace) -> tuple[pd.DataFrame, pd.DataFram
         "required_pi_sites": sorted(REQUIRED_PI_SITES),
         "configured_pi_sites": sorted(REQUIRED_PI_SITES & set(sites)),
         "coords_confirmed": args.coords_confirmed,
+        "synthetic_demo": bool(
+            not outcomes.empty and outcomes.get("synthetic_demo", pd.Series(dtype=bool)).any()
+        ),
     }
     return people, outcomes, report
 
@@ -301,7 +329,7 @@ def real_outcome_training_rows(merged: pd.DataFrame, seed: dict[str, Any]) -> pd
         identity = [row.get(key) for key in ("spot_id", "outcome_timestamp", "scenario", "category")]
         record = {
             "row_id": "real-" + hashlib.sha256(json.dumps(identity, default=str).encode()).hexdigest()[:16],
-            "scenario": v12.v11.normalize_scenario(row["scenario"]),
+            "scenario": normalize_training_scenario(row["scenario"]),
             "category": str(row["category"]),
             "occupancy": finite(row.get("occupancy"), finite(row.get("peoplesense_count"), 0.0)),
             "density": finite(row.get("density"), finite(row.get("peoplesense_density"), 0.5)),
@@ -321,6 +349,7 @@ def real_outcome_training_rows(merged: pd.DataFrame, seed: dict[str, Any]) -> pd
             "egress_usable_width_m": finite(row.get("egress_usable_width_m"), 0.0),
             "egress_route_length_m": finite(row.get("egress_route_length_m"), 0.0),
             "egress_blockage_fraction": finite(row.get("egress_blockage_fraction"), 0.0),
+            "synthetic_demo": bool(row.get("synthetic_demo")),
         }
         record.update(hazard_fields_for_spot(record["spot_id"], seed))
         records.append(record)
@@ -349,11 +378,11 @@ def ensure_v13_features(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 @dataclass
-class Evo13Preprocessor(v12.HazardPreprocessor):
+class Evo13Preprocessor(BASE_HAZARD_PREPROCESSOR):
     @staticmethod
     def numeric(frame: pd.DataFrame, density_imputation: float) -> np.ndarray:
         frame = ensure_v13_features(frame)
-        base = v12.HazardPreprocessor.numeric(frame, density_imputation)
+        base = BASE_HAZARD_PREPROCESSOR.numeric(frame, density_imputation)
         count = np.log1p(frame["peoplesense_count"].fillna(0).clip(lower=0).to_numpy(float))
         density = frame["peoplesense_density"].fillna(density_imputation).clip(0, 1).to_numpy(float)
         volatility = frame["peoplesense_volatility"].fillna(0).clip(lower=0).to_numpy(float)
@@ -464,9 +493,11 @@ def run_training(args: argparse.Namespace, people: pd.DataFrame, outcomes: pd.Da
     best_success = max(candidate["aggregate_metrics"]["r2_success_pct"] for candidate in candidates)
     best_time = max(candidate["aggregate_metrics"]["r2_time_min"] for candidate in candidates)
     ceiling = None if all_pass else ("DATA_CEILING" if best_success < 0.25 or best_time < 0.75 else "MODEL_CEILING")
+    synthetic_demo = bool(outcomes.get("synthetic_demo", pd.Series(dtype=bool)).any())
+    promotion_eligible = all_pass and not synthetic_demo
     recommendation = (
         "promote_evo1.3"
-        if all_pass
+        if promotion_eligible
         else "keep_evo1.2_hybrid"
     )
     report = {
@@ -489,11 +520,17 @@ def run_training(args: argparse.Namespace, people: pd.DataFrame, outcomes: pd.Da
         "export_validation": export,
         "quality_gates": gates,
         "all_quality_gates_pass": all_pass,
+        "synthetic_demo": synthetic_demo,
+        "production_promotion_allowed": promotion_eligible,
         "failed_quality_gates": [name for name, passed in gates.items() if not passed],
         "failure_classification": ceiling,
         "promotion_recommendation": recommendation,
-        "production_policy_unchanged": not all_pass,
-        "honest_assessment": "PeopleSense features are evaluated only where timestamped real outcomes exist.",
+        "production_policy_unchanged": not promotion_eligible,
+        "honest_assessment": (
+            "Mentor feasibility demo using explicitly synthetic outcomes; metrics are not production evidence."
+            if synthetic_demo
+            else "PeopleSense features are evaluated only where timestamped real outcomes exist."
+        ),
     }
     audit = {
         **baseline_audit,
@@ -506,6 +543,8 @@ def run_training(args: argparse.Namespace, people: pd.DataFrame, outcomes: pd.Da
         "synthetic_rows": int(augmented["synthetic_augmentation"].sum()),
         "synthetic_rows_grouped": True,
         "coords_confirmed": True,
+        "synthetic_demo": synthetic_demo,
+        "production_eligible_data": not synthetic_demo,
     }
     files = {
         "validation_report.json": report,
@@ -515,7 +554,11 @@ def run_training(args: argparse.Namespace, people: pd.DataFrame, outcomes: pd.Da
         "learning_curves.json": {"model_version": MODEL_VERSION, **mlp["learning_curves"]},
         "dashboard_curves.json": {"model_version": MODEL_VERSION, **mlp["learning_curves"]},
         "metrics.json": {
-            "status": "passed" if all_pass else "failed_quality_gate",
+            "status": (
+                "passed_research_demo_only"
+                if all_pass and synthetic_demo
+                else ("passed" if all_pass else "failed_quality_gate")
+            ),
             "model_version": MODEL_VERSION,
             "selected_model": winner["name"],
             "promotion_recommendation": recommendation,
@@ -526,11 +569,24 @@ def run_training(args: argparse.Namespace, people: pd.DataFrame, outcomes: pd.Da
             "val_mae_time_min": selected["mae_time_min"],
             "val_r2_time_min": selected["r2_time_min"],
             "all_quality_gates_pass": all_pass,
+            "synthetic_demo": synthetic_demo,
+            "production_promotion_allowed": promotion_eligible,
         },
     }
     for name, payload in files.items():
         (args.output_dir / name).write_text(json.dumps(clean(payload), indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"status": "complete", "all_quality_gates_pass": all_pass, "promotion_recommendation": recommendation}, indent=2))
+    print(
+        json.dumps(
+            {
+                "status": "complete_research_demo" if synthetic_demo else "complete",
+                "all_quality_gates_pass": all_pass,
+                "synthetic_demo": synthetic_demo,
+                "production_promotion_allowed": promotion_eligible,
+                "promotion_recommendation": recommendation,
+            },
+            indent=2,
+        )
+    )
 
 
 def parse_args() -> argparse.Namespace:

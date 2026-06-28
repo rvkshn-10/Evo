@@ -26,17 +26,16 @@ Classification remains `DATA_CEILING`. Results are effectively unchanged from
 the prior Evo 1.2 run because refreshed hazard and occupancy features do not add
 measured evacuation outcomes.
 
-## Phase B remains blocked
+## Phase B — synthetic demo trained (mentor preview)
 
-The current PeopleSense file is a live feature snapshot, not a drill-aligned
-label. FCUSD still needs to provide:
+Synthetic drill outcomes and aligned PeopleSense XML are in
+`data/incoming/evo1.3/` (see `DEMO_SYNTHETIC_DATA.md`).
 
-- measured `real_outcomes.json` rows;
-- drill-timestamp PeopleSense exports for Vista del Lago, Folsom High, and
-  Cordova Park;
-- GGV2 deployment/Group ID confirmation for each site;
-- GPS confirmation for all three sites;
-- egress geometry where available.
+**Training completed 2026-06-28:** preflight exit 0, training exit 0,
+status `complete_research_demo`. Artifacts copied to `models/evo1.3/`.
+Metrics: Success R² 0.185, Time R² 0.596 → `DATA_CEILING`;
+`keep_evo1.2_hybrid`. Full report: `model_training/evo1_3/PHASE_B_STATUS.md`.
 
-The Evo 1.3 preflight returns code 2. Evo 1.3 was not trained or promoted, and
-the Evo 1.2 hybrid production policy remains unchanged.
+**Still required for real promotion:** measured drill outcomes (not synthetic),
+verified GPS/Group IDs, enough labeled rows to clear R² gates. Evo 1.2 hybrid
+remains production policy.

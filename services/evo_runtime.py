@@ -93,6 +93,12 @@ class EvoRuntime:
             logger.warning("ONNX Runtime load failed: %s", exc)
             return False
 
+    def _openvino_parity_passed(self) -> bool:
+        """Refuse an IR artifact that its own validation report marks unsafe."""
+        report = _read_json(self.model_dir / "validation_report.json")
+        gates = (report or {}).get("quality_gates", {})
+        return gates.get("openvino_parity") is not False
+
     def ensure_loaded(self) -> bool:
         if self._compiled is not None:
             return True
@@ -103,9 +109,13 @@ class EvoRuntime:
         self._resolved_accelerator = resolved
 
         use_openvino = settings.EVO_PREFER_OPENVINO or requested in {"ncs1", "ncs2", "auto"}
-        if use_openvino and device:
+        if use_openvino and device and self._openvino_parity_passed():
             if self._load_openvino(device):
                 return True
+        elif use_openvino and device:
+            self._last_load_error = (
+                "OpenVINO parity validation failed; using verified ONNX Runtime artifact."
+            )
 
         if requested in {"ncs1", "ncs2"}:
             logger.warning(

@@ -46,8 +46,8 @@ export const GLOSSARY = {
     text: "LightGBM tree ensemble head; predictions are averaged with the MLP out-of-fold for robustness.",
   },
   openvino: {
-    label: "OpenVINO / NCS",
-    text: "Intel software that runs Evo on CPU or on a Neural Compute Stick (NCS1/NCS2) plugged into a local Mac via USB.",
+    label: "Neural Compute Stick",
+    text: "Intel USB accelerator (NCS1/NCS2). OpenVINO is the driver that routes the Evo model to the stick (MYRIAD) or CPU. Local Mac only — not on Vercel.",
   },
   accel_auto: {
     label: "Auto",
@@ -55,7 +55,7 @@ export const GLOSSARY = {
   },
   accel_cpu: {
     label: "CPU",
-    text: "Run Evo on the Mac or server CPU via ONNX Runtime or OpenVINO — no USB stick required.",
+    text: "Run Evo on the server CPU — no Neural Compute Stick required. Used on Vercel/Oracle production.",
   },
   accel_ncs2: {
     label: "Neural Compute Stick 2",

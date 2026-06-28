@@ -1,0 +1,1221 @@
+{
+  "model_version": "evo1.3",
+  "evo1.2_baseline": {
+    "success_r2": 0.184,
+    "time_r2": 0.636
+  },
+  "evaluation_protocol": {
+    "folds": 5,
+    "splitter": "StratifiedGroupKFold by scenario with row_id groups",
+    "synthetic_variants_grouped": true,
+    "unlabeled_live_rows_in_metrics": false
+  },
+  "selected_model": "mlp_lightgbm_oof_average",
+  "model_comparison": {
+    "dual_head_mlp": {
+      "name": "dual_head_mlp",
+      "aggregate_metrics": {
+        "samples_success_pct": 8024,
+        "mae_success_pct": 1.6506381034851074,
+        "r2_success_pct": 0.1929183006286621,
+        "samples_time_min": 8188,
+        "mae_time_min": 0.8527032732963562,
+        "r2_time_min": 0.5640431642532349
+      },
+      "fold_metrics": [
+        {
+          "fold": 1,
+          "best_epoch": 20,
+          "samples_success_pct": 1608,
+          "mae_success_pct": 1.68873131275177,
+          "r2_success_pct": 0.16492056846618652,
+          "samples_time_min": 1640,
+          "mae_time_min": 0.8986559510231018,
+          "r2_time_min": 0.6185261607170105
+        },
+        {
+          "fold": 2,
+          "best_epoch": 2,
+          "samples_success_pct": 1604,
+          "mae_success_pct": 1.6542060375213623,
+          "r2_success_pct": 0.22009283304214478,
+          "samples_time_min": 1636,
+          "mae_time_min": 0.897493302822113,
+          "r2_time_min": 0.48587965965270996
+        },
+        {
+          "fold": 3,
+          "best_epoch": 24,
+          "samples_success_pct": 1600,
+          "mae_success_pct": 1.6299856901168823,
+          "r2_success_pct": 0.1765592098236084,
+          "samples_time_min": 1636,
+          "mae_time_min": 0.8779006600379944,
+          "r2_time_min": 0.502681314945221
+        },
+        {
+          "fold": 4,
+          "best_epoch": 3,
+          "samples_success_pct": 1604,
+          "mae_success_pct": 1.542346477508545,
+          "r2_success_pct": 0.20203983783721924,
+          "samples_time_min": 1640,
+          "mae_time_min": 0.8519807457923889,
+          "r2_time_min": 0.60813307762146
+        },
+        {
+          "fold": 5,
+          "best_epoch": 3,
+          "samples_success_pct": 1608,
+          "mae_success_pct": 1.737557291984558,
+          "r2_success_pct": 0.1991262435913086,
+          "samples_time_min": 1636,
+          "mae_time_min": 0.7373749613761902,
+          "r2_time_min": 0.6329562664031982
+        }
+      ],
+      "fold_mean_std": {
+        "mae_success_pct": {
+          "mean": 1.6505653619766236,
+          "std": 0.06507279009366099
+        },
+        "r2_success_pct": {
+          "mean": 0.1925477385520935,
+          "std": 0.019549948775957154
+        },
+        "mae_time_min": {
+          "mean": 0.8526811242103577,
+          "std": 0.06008967092142049
+        },
+        "r2_time_min": {
+          "mean": 0.5696352958679199,
+          "std": 0.06225718164898979
+        }
+      },
+      "learning_curves": {
+        "train_loss": [
+          0.8495246363373903,
+          0.6550746753811836,
+          0.6080068816359226,
+          0.6048304189856236,
+          0.5994742307525415,
+          0.5944565251469613,
+          0.5933879045339732,
+          0.5932509224002178,
+          0.5828566183264439,
+          0.5878236112686304,
+          0.5839046048430296,
+          0.5778705195738719,
+          0.5769893058217488,
+          0.5817220103282195,
+          0.5761558136114707,
+          0.5779595359013632,
+          0.5728249265597416,
+          0.5791646434710576,
+          0.5792294153800377,
+          0.5725929550253428,
+          0.5752981354410831,
+          0.5756663410709455,
+          0.5719597498957928,
+          0.5641647348037132,
+          0.5685903668403626,
+          0.5662067991036634,
+          0.5649401432046524,
+          0.5628841444849968,
+          0.5604301241154854,
+          0.5588987716115438,
+          0.5636970148636744,
+          0.5607207767092265,
+          0.5561677925288677,
+          0.5551943071186543,
+          0.5620749148611839,
+          0.5541675342963293,
+          0.5564202846815953,
+          0.5540840052641355,
+          0.5531783688526888,
+          0.5495676020017037,
+          0.5522092781387843,
+          0.5530891544543779,
+          0.5476733133769953,
+          0.5513011013659147,
+          0.5540044362155291,
+          0.5429863935479751,
+          0.5595089884904715,
+          0.540836774959014,
+          0.5450192449184564
+        ],
+        "val_loss": [
+          0.735716986656189,
+          0.6215941548347473,
+          0.6124305009841919,
+          0.613823139667511,
+          0.6143069505691529,
+          0.6162684202194214,
+          0.6111678361892701,
+          0.6154236674308777,
+          0.6073634505271912,
+          0.6092360258102417,
+          0.6119690179824829,
+          0.6112943649291992,
+          0.6136905550956726,
+          0.6114895224571228,
+          0.6106574892997741,
+          0.6127712607383728,
+          0.611025071144104,
+          0.6182400584220886,
+          0.6118312835693359,
+          0.6129813909530639,
+          0.6144329667091369,
+          0.6175362825393677,
+          0.6196440815925598,
+          0.6143229484558106,
+          0.6157318472862243,
+          0.6188260197639466,
+          0.6221677660942078,
+          0.6199586987495422,
+          0.6682046055793762,
+          0.6731131076812744,
+          0.6689224243164062,
+          0.6619981229305267,
+          0.6707326173782349,
+          0.6715741753578186,
+          0.6627969145774841,
+          0.6664647161960602,
+          0.6650871634483337,
+          0.6680793166160583,
+          0.6699059009552002,
+          0.6671283543109894,
+          0.6670559644699097,
+          0.6677835285663605,
+          0.6658248603343964,
+          0.6674881279468536,
+          0.6661111414432526,
+          0.665593147277832,
+          0.6675280332565308,
+          0.6676316261291504,
+          0.6696901917457581
+        ],
+        "learning_rate": [
+          0.001,
+          0.001,
+          0.001,
+          0.001,
+          0.001,
+          0.001,
+          0.001,
+          0.001,
+          0.001,
+          0.001,
+          0.0009000000000000001,
+          0.0007,
+          0.0007,
+          0.0007,
+          0.0007,
+          0.0007,
+          0.0007,
+          0.0007,
+          0.0007,
+          0.0006500000000000001,
+          0.0005500000000000001,
+          0.0005500000000000001,
+          0.0005500000000000001,
+          0.0005500000000000001,
+          0.0005500000000000001,
+          0.0005500000000000001,
+          0.0005500000000000001,
+          0.0006250000000000001,
+          0.00075,
+          0.00075,
+          0.00075,
+          0.00075,
+          0.0005,
+          0.0005,
+          0.0005,
+          0.0005,
+          0.0005,
+          0.000375,
+          0.000375,
+          0.000375,
+          0.000375,
+          0.00025,
+          0.00025,
+          0.00025,
+          0.00025,
+          0.00025,
+          0.00025,
+          0.00025,
+          0.00025
+        ]
+      },
+      "mean_best_epoch": 10.4
+    },
+    "lightgbm_dual_regressors": {
+      "name": "lightgbm_dual_regressors",
+      "aggregate_metrics": {
+        "samples_success_pct": 8024,
+        "mae_success_pct": 1.6898971796035767,
+        "r2_success_pct": 0.14661359786987305,
+        "samples_time_min": 8188,
+        "mae_time_min": 0.9186457395553589,
+        "r2_time_min": 0.5246195197105408
+      },
+      "fold_metrics": [
+        {
+          "fold": 1,
+          "samples_success_pct": 1608,
+          "mae_success_pct": 1.7454473972320557,
+          "r2_success_pct": 0.10215795040130615,
+          "samples_time_min": 1640,
+          "mae_time_min": 0.883707582950592,
+          "r2_time_min": 0.6337457895278931
+        },
+        {
+          "fold": 2,
+          "samples_success_pct": 1604,
+          "mae_success_pct": 1.679962396621704,
+          "r2_success_pct": 0.18440324068069458,
+          "samples_time_min": 1636,
+          "mae_time_min": 0.9999082088470459,
+          "r2_time_min": 0.48166608810424805
+        },
+        {
+          "fold": 3,
+          "samples_success_pct": 1600,
+          "mae_success_pct": 1.6502447128295898,
+          "r2_success_pct": 0.13909178972244263,
+          "samples_time_min": 1636,
+          "mae_time_min": 0.9091483354568481,
+          "r2_time_min": 0.6000975370407104
+        },
+        {
+          "fold": 4,
+          "samples_success_pct": 1604,
+          "mae_success_pct": 1.5839931964874268,
+          "r2_success_pct": 0.16795706748962402,
+          "samples_time_min": 1640,
+          "mae_time_min": 0.8669860363006592,
+          "r2_time_min": 0.6188745498657227
+        },
+        {
+          "fold": 5,
+          "samples_success_pct": 1608,
+          "mae_success_pct": 1.7893528938293457,
+          "r2_success_pct": 0.13988035917282104,
+          "samples_time_min": 1636,
+          "mae_time_min": 0.9336903691291809,
+          "r2_time_min": 0.07612800598144531
+        }
+      ],
+      "fold_mean_std": {
+        "mae_success_pct": {
+          "mean": 1.6898001194000245,
+          "std": 0.07192202769852703
+        },
+        "r2_success_pct": {
+          "mean": 0.14669808149337768,
+          "std": 0.028148832319558954
+        },
+        "mae_time_min": {
+          "mean": 0.9186881065368653,
+          "std": 0.04649628206965271
+        },
+        "r2_time_min": {
+          "mean": 0.4821023941040039,
+          "std": 0.20997170756959563
+        }
+      },
+      "gain_importance_by_fold": [
+        {
+          "evacuation_success_pct": {
+            "occupancy_log_scaled": 1594.0,
+            "density_scaled": 1036.0,
+            "severity_score_scaled": 321.0,
+            "hazard_magnitude_log_scaled": 0.0,
+            "hazard_distance_log_scaled": 0.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 1726.0,
+            "capacity_utilization_scaled": 743.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 25.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 0.0,
+            "category=Office Building": 0.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 50.0,
+            "scenario=Tunnel Smoke": 92.0,
+            "scenario=Sudden Overcrowding": 235.0,
+            "scenario=Panic Chain Reaction": 63.0,
+            "scenario=Platform Fire": 41.0,
+            "scenario=Station Flooding": 131.0,
+            "scenario=Standard Evacuation Drill": 0.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          },
+          "evacuation_time_min": {
+            "occupancy_log_scaled": 1934.0,
+            "density_scaled": 647.0,
+            "severity_score_scaled": 10.0,
+            "hazard_magnitude_log_scaled": 65.0,
+            "hazard_distance_log_scaled": 344.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 771.0,
+            "capacity_utilization_scaled": 992.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 0.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 26.0,
+            "category=Office Building": 61.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 39.0,
+            "scenario=Tunnel Smoke": 27.0,
+            "scenario=Sudden Overcrowding": 28.0,
+            "scenario=Panic Chain Reaction": 13.0,
+            "scenario=Platform Fire": 27.0,
+            "scenario=Station Flooding": 6.0,
+            "scenario=Standard Evacuation Drill": 189.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          }
+        },
+        {
+          "evacuation_success_pct": {
+            "occupancy_log_scaled": 1642.0,
+            "density_scaled": 1182.0,
+            "severity_score_scaled": 319.0,
+            "hazard_magnitude_log_scaled": 0.0,
+            "hazard_distance_log_scaled": 0.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 1615.0,
+            "capacity_utilization_scaled": 717.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 38.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 0.0,
+            "category=Office Building": 0.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 82.0,
+            "scenario=Tunnel Smoke": 59.0,
+            "scenario=Sudden Overcrowding": 176.0,
+            "scenario=Panic Chain Reaction": 144.0,
+            "scenario=Platform Fire": 42.0,
+            "scenario=Station Flooding": 72.0,
+            "scenario=Standard Evacuation Drill": 0.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          },
+          "evacuation_time_min": {
+            "occupancy_log_scaled": 1700.0,
+            "density_scaled": 619.0,
+            "severity_score_scaled": 21.0,
+            "hazard_magnitude_log_scaled": 142.0,
+            "hazard_distance_log_scaled": 498.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 535.0,
+            "capacity_utilization_scaled": 864.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 0.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 14.0,
+            "category=Office Building": 150.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 31.0,
+            "scenario=Tunnel Smoke": 9.0,
+            "scenario=Sudden Overcrowding": 39.0,
+            "scenario=Panic Chain Reaction": 19.0,
+            "scenario=Platform Fire": 8.0,
+            "scenario=Station Flooding": 12.0,
+            "scenario=Standard Evacuation Drill": 126.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          }
+        },
+        {
+          "evacuation_success_pct": {
+            "occupancy_log_scaled": 1778.0,
+            "density_scaled": 1051.0,
+            "severity_score_scaled": 329.0,
+            "hazard_magnitude_log_scaled": 0.0,
+            "hazard_distance_log_scaled": 0.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 1604.0,
+            "capacity_utilization_scaled": 790.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 25.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 0.0,
+            "category=Office Building": 0.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 69.0,
+            "scenario=Tunnel Smoke": 71.0,
+            "scenario=Sudden Overcrowding": 183.0,
+            "scenario=Panic Chain Reaction": 101.0,
+            "scenario=Platform Fire": 25.0,
+            "scenario=Station Flooding": 105.0,
+            "scenario=Standard Evacuation Drill": 0.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          },
+          "evacuation_time_min": {
+            "occupancy_log_scaled": 1873.0,
+            "density_scaled": 754.0,
+            "severity_score_scaled": 1.0,
+            "hazard_magnitude_log_scaled": 171.0,
+            "hazard_distance_log_scaled": 238.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 662.0,
+            "capacity_utilization_scaled": 1211.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 0.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 3.0,
+            "category=Office Building": 133.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 40.0,
+            "scenario=Tunnel Smoke": 7.0,
+            "scenario=Sudden Overcrowding": 39.0,
+            "scenario=Panic Chain Reaction": 8.0,
+            "scenario=Platform Fire": 19.0,
+            "scenario=Station Flooding": 13.0,
+            "scenario=Standard Evacuation Drill": 143.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          }
+        },
+        {
+          "evacuation_success_pct": {
+            "occupancy_log_scaled": 1490.0,
+            "density_scaled": 1153.0,
+            "severity_score_scaled": 311.0,
+            "hazard_magnitude_log_scaled": 0.0,
+            "hazard_distance_log_scaled": 0.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 1470.0,
+            "capacity_utilization_scaled": 1092.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 37.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 0.0,
+            "category=Office Building": 0.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 78.0,
+            "scenario=Tunnel Smoke": 81.0,
+            "scenario=Sudden Overcrowding": 230.0,
+            "scenario=Panic Chain Reaction": 68.0,
+            "scenario=Platform Fire": 67.0,
+            "scenario=Station Flooding": 108.0,
+            "scenario=Standard Evacuation Drill": 0.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          },
+          "evacuation_time_min": {
+            "occupancy_log_scaled": 1738.0,
+            "density_scaled": 743.0,
+            "severity_score_scaled": 0.0,
+            "hazard_magnitude_log_scaled": 137.0,
+            "hazard_distance_log_scaled": 237.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 792.0,
+            "capacity_utilization_scaled": 1016.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 0.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 6.0,
+            "category=Office Building": 219.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 41.0,
+            "scenario=Tunnel Smoke": 34.0,
+            "scenario=Sudden Overcrowding": 58.0,
+            "scenario=Panic Chain Reaction": 17.0,
+            "scenario=Platform Fire": 11.0,
+            "scenario=Station Flooding": 2.0,
+            "scenario=Standard Evacuation Drill": 116.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          }
+        },
+        {
+          "evacuation_success_pct": {
+            "occupancy_log_scaled": 1513.0,
+            "density_scaled": 1181.0,
+            "severity_score_scaled": 319.0,
+            "hazard_magnitude_log_scaled": 0.0,
+            "hazard_distance_log_scaled": 0.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 1667.0,
+            "capacity_utilization_scaled": 784.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 36.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 0.0,
+            "category=Office Building": 0.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 82.0,
+            "scenario=Tunnel Smoke": 117.0,
+            "scenario=Sudden Overcrowding": 148.0,
+            "scenario=Panic Chain Reaction": 120.0,
+            "scenario=Platform Fire": 68.0,
+            "scenario=Station Flooding": 201.0,
+            "scenario=Standard Evacuation Drill": 0.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          },
+          "evacuation_time_min": {
+            "occupancy_log_scaled": 1779.0,
+            "density_scaled": 619.0,
+            "severity_score_scaled": 3.0,
+            "hazard_magnitude_log_scaled": 74.0,
+            "hazard_distance_log_scaled": 306.0,
+            "hazard_depth_km_scaled": 0.0,
+            "occupancy_density_interaction_scaled": 640.0,
+            "capacity_utilization_scaled": 1185.0,
+            "real_hazard_join_flag_scaled": 0.0,
+            "synthetic_augmentation_flag_scaled": 0.0,
+            "peoplesense_count_log_scaled": 0.0,
+            "peoplesense_density_scaled": 0.0,
+            "peoplesense_volatility_scaled": 0.0,
+            "peoplesense_sample_age_hours_log_scaled": 0.0,
+            "peoplesense_observed_flag_scaled": 0.0,
+            "egress_exit_count_scaled": 0.0,
+            "egress_usable_width_m_scaled": 0.0,
+            "egress_route_length_m_scaled": 0.0,
+            "egress_blockage_fraction_scaled": 0.0,
+            "category=Train Station": 6.0,
+            "category=Office Building": 121.0,
+            "category=Stadium": 0.0,
+            "scenario=Electrical Fire": 38.0,
+            "scenario=Tunnel Smoke": 5.0,
+            "scenario=Sudden Overcrowding": 52.0,
+            "scenario=Panic Chain Reaction": 10.0,
+            "scenario=Platform Fire": 1.0,
+            "scenario=Station Flooding": 21.0,
+            "scenario=Standard Evacuation Drill": 176.0,
+            "scenario=Blockage": 0.0,
+            "event_type=fire": 0.0,
+            "event_type=flood": 0.0,
+            "event_type=earthquake": 0.0,
+            "event_type=tornado": 0.0,
+            "event_type=tsunami": 0.0,
+            "event_type=other": 0.0,
+            "hazard_source=none": 0.0,
+            "hazard_source=noaa_nws": 0.0,
+            "hazard_source=usgs": 0.0,
+            "hazard_source=gdacs": 0.0,
+            "hazard_source=nasa_firms": 0.0,
+            "hazard_source=fema_ipaws": 0.0
+          }
+        }
+      ]
+    },
+    "mlp_lightgbm_oof_average": {
+      "name": "mlp_lightgbm_oof_average",
+      "aggregate_metrics": {
+        "samples_success_pct": 8024,
+        "mae_success_pct": 1.656764268875122,
+        "r2_success_pct": 0.1849968433380127,
+        "samples_time_min": 8188,
+        "mae_time_min": 0.8725770711898804,
+        "r2_time_min": 0.5955042243003845
+      }
+    }
+  },
+  "cross_validation": {
+    "aggregate_metrics": {
+      "samples_success_pct": 8024,
+      "mae_success_pct": 1.656764268875122,
+      "r2_success_pct": 0.1849968433380127,
+      "samples_time_min": 8188,
+      "mae_time_min": 0.8725770711898804,
+      "r2_time_min": 0.5955042243003845
+    },
+    "per_category": {
+      "Train Station": {
+        "samples_success_pct": 8004,
+        "mae_success_pct": 1.653777003288269,
+        "r2_success_pct": 0.17791897058486938,
+        "samples_time_min": 8004,
+        "mae_time_min": 0.5455045104026794,
+        "r2_time_min": -0.08382952213287354
+      },
+      "Office Building": {
+        "samples_success_pct": 16,
+        "mae_success_pct": 2.315702438354492,
+        "r2_success_pct": 0.5505915880203247,
+        "samples_time_min": 140,
+        "mae_time_min": 19.411670684814453,
+        "r2_time_min": 0.05233544111251831
+      },
+      "Stadium": {
+        "samples_success_pct": 4,
+        "mae_success_pct": 4.998668670654297,
+        "r2_success_pct": -23.831632614135742,
+        "samples_time_min": 44,
+        "mae_time_min": 1.38201904296875,
+        "r2_time_min": 0.6113529205322266
+      }
+    }
+  },
+  "baseline_comparisons": {
+    "mean": {
+      "aggregate_metrics": {
+        "samples_success_pct": 8024,
+        "mae_success_pct": 2.1408026218414307,
+        "r2_success_pct": -0.3518589735031128,
+        "samples_time_min": 8188,
+        "mae_time_min": 1.1234607696533203,
+        "r2_time_min": -0.00018787384033203125
+      }
+    },
+    "knn_k25_production_distance": {
+      "aggregate_metrics": {
+        "samples_success_pct": 8024,
+        "mae_success_pct": 2.1465814113616943,
+        "r2_success_pct": -0.3644826412200928,
+        "samples_time_min": 8188,
+        "mae_time_min": 1.0192902088165283,
+        "r2_time_min": -0.00953984260559082
+      }
+    }
+  },
+  "feature_importance": {
+    "method": "grouped-holdout permutation importance; positive R2 drop means useful",
+    "baseline_holdout_metrics": {
+      "samples_success_pct": 1608,
+      "mae_success_pct": 1.7040560245513916,
+      "r2_success_pct": 0.14680850505828857,
+      "samples_time_min": 1640,
+      "mae_time_min": 0.8869772553443909,
+      "r2_time_min": 0.6444375514984131
+    },
+    "features": [
+      {
+        "feature": "severity_score_scaled",
+        "success_r2_drop": 0.26371288299560547,
+        "time_r2_drop": 0.0032747983932495117,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "scenario=Standard Evacuation Drill",
+        "success_r2_drop": 7.933378219604492e-05,
+        "time_r2_drop": 0.2273814082145691,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "occupancy_log_scaled",
+        "success_r2_drop": -0.0010426640510559082,
+        "time_r2_drop": 0.18893837928771973,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "category=Office Building",
+        "success_r2_drop": -5.02467155456543e-05,
+        "time_r2_drop": 0.16743367910385132,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "hazard_distance_log_scaled",
+        "success_r2_drop": -0.0001914501190185547,
+        "time_r2_drop": 0.07817471027374268,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "capacity_utilization_scaled",
+        "success_r2_drop": 0.018313050270080566,
+        "time_r2_drop": 0.04380965232849121,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "category=Train Station",
+        "success_r2_drop": 8.291006088256836e-05,
+        "time_r2_drop": 0.039412736892700195,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "occupancy_density_interaction_scaled",
+        "success_r2_drop": -0.0030472874641418457,
+        "time_r2_drop": 0.029679179191589355,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "hazard_magnitude_log_scaled",
+        "success_r2_drop": 0.00011068582534790039,
+        "time_r2_drop": 0.023841142654418945,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "synthetic_augmentation_flag_scaled",
+        "success_r2_drop": 0.021239936351776123,
+        "time_r2_drop": 0.0005031824111938477,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "egress_exit_count_scaled",
+        "success_r2_drop": 0.00027304887771606445,
+        "time_r2_drop": 0.011686086654663086,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "egress_route_length_m_scaled",
+        "success_r2_drop": -0.00013238191604614258,
+        "time_r2_drop": 0.0083732008934021,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "scenario=Station Flooding",
+        "success_r2_drop": 0.00709301233291626,
+        "time_r2_drop": 0.0033262968063354492,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "scenario=Panic Chain Reaction",
+        "success_r2_drop": 0.002866685390472412,
+        "time_r2_drop": 0.0060389041900634766,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "scenario=Electrical Fire",
+        "success_r2_drop": -0.0005195736885070801,
+        "time_r2_drop": 0.005378842353820801,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "scenario=Sudden Overcrowding",
+        "success_r2_drop": -0.005136072635650635,
+        "time_r2_drop": 0.003901958465576172,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "density_scaled",
+        "success_r2_drop": -0.018580615520477295,
+        "time_r2_drop": 0.003426194190979004,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "scenario=Tunnel Smoke",
+        "success_r2_drop": -0.0062926411628723145,
+        "time_r2_drop": 0.002284824848175049,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "peoplesense_density_scaled",
+        "success_r2_drop": 0.0010114312171936035,
+        "time_r2_drop": -8.976459503173828e-05,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "peoplesense_volatility_scaled",
+        "success_r2_drop": 0.0007327795028686523,
+        "time_r2_drop": -0.00010192394256591797,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "egress_usable_width_m_scaled",
+        "success_r2_drop": 0.0006131529808044434,
+        "time_r2_drop": -7.712841033935547e-05,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "peoplesense_observed_flag_scaled",
+        "success_r2_drop": -0.00025260448455810547,
+        "time_r2_drop": 0.0002262592315673828,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "category=Stadium",
+        "success_r2_drop": 3.802776336669922e-05,
+        "time_r2_drop": 0.0001341104507446289,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "scenario=Blockage",
+        "success_r2_drop": -8.881092071533203e-06,
+        "time_r2_drop": 2.4437904357910156e-06,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "hazard_depth_km_scaled",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "real_hazard_join_flag_scaled",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "peoplesense_sample_age_hours_log_scaled",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "egress_blockage_fraction_scaled",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "event_type=fire",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "event_type=flood",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "event_type=earthquake",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "event_type=tornado",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "event_type=tsunami",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "event_type=other",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "hazard_source=none",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=noaa_nws",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=usgs",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=gdacs",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=nasa_firms",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=fema_ipaws",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "scenario=Platform Fire",
+        "success_r2_drop": -0.00302964448928833,
+        "time_r2_drop": -8.255243301391602e-05,
+        "is_live_hazard_feature": false
+      },
+      {
+        "feature": "peoplesense_count_log_scaled",
+        "success_r2_drop": -0.0005892515182495117,
+        "time_r2_drop": -0.0003217458724975586,
+        "is_live_hazard_feature": false
+      }
+    ],
+    "live_feature_summary": [
+      {
+        "feature": "severity_score_scaled",
+        "success_r2_drop": 0.26371288299560547,
+        "time_r2_drop": 0.0032747983932495117,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_magnitude_log_scaled",
+        "success_r2_drop": 0.00011068582534790039,
+        "time_r2_drop": 0.023841142654418945,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_distance_log_scaled",
+        "success_r2_drop": -0.0001914501190185547,
+        "time_r2_drop": 0.07817471027374268,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_depth_km_scaled",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "real_hazard_join_flag_scaled",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=none",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=noaa_nws",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=usgs",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=gdacs",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=nasa_firms",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      },
+      {
+        "feature": "hazard_source=fema_ipaws",
+        "success_r2_drop": 0.0,
+        "time_r2_drop": 0.0,
+        "is_live_hazard_feature": true
+      }
+    ],
+    "warning": "Synthetic severity has an explicit target adjustment; its importance is not evidence of a real-world causal relationship."
+  },
+  "export_validation": {
+    "onnx_matches_selected_model_within_1pct": true,
+    "onnx_max_abs_difference": 0.027146339416503906,
+    "openvino_matches_selected_model_within_1pct": false,
+    "openvino_max_abs_difference": 62.697959899902344,
+    "openvino_ir_loaded": true,
+    "single_sample_latency_ms_p50": 1.684604,
+    "single_sample_latency_ms_p95": 21.447443749999948,
+    "single_sample_under_10ms_p95": false
+  },
+  "quality_gates": {
+    "cv_mae_success_under_2_pct": true,
+    "cv_r2_success_at_least_0_25": false,
+    "cv_mae_time_under_1_min": true,
+    "cv_r2_time_at_least_0_75": false,
+    "beats_mean_success": true,
+    "beats_mean_time": true,
+    "beats_knn_success": true,
+    "beats_knn_time": true,
+    "onnx_parity": true,
+    "openvino_parity": false,
+    "openvino_ir_loaded": true,
+    "p95_inference_under_10ms": false
+  },
+  "all_quality_gates_pass": false,
+  "synthetic_demo": true,
+  "production_promotion_allowed": false,
+  "failed_quality_gates": [
+    "cv_r2_success_at_least_0_25",
+    "cv_r2_time_at_least_0_75",
+    "openvino_parity",
+    "p95_inference_under_10ms"
+  ],
+  "failure_classification": "DATA_CEILING",
+  "promotion_recommendation": "keep_evo1.2_hybrid",
+  "production_policy_unchanged": true,
+  "honest_assessment": "Mentor feasibility demo using explicitly synthetic outcomes; metrics are not production evidence."
+}

@@ -27,7 +27,7 @@ from services.disaster_history import (
     storage_backend,
 )
 from services.evo_live_flow import build_live_flow
-from services.evo_runtime import get_evo_runtime
+from services.evo_runtime import get_evo13_runtime, get_evo_runtime
 from services.pipeline_status import get_pipeline_status
 from services.run_modes import RunMode, execute_run_mode_sync
 from services.evacuation_predictor import EvacuationPredictor
@@ -379,8 +379,10 @@ async def get_evo_live_flow(
 
 
 @router.get("/evo/runtime")
-async def get_evo_runtime_status():
-    """Active Evo inference backend (CPU, NCS1/NCS2, or ONNX fallback)."""
+async def get_evo_runtime_status(version: Optional[str] = Query(default=None)):
+    """Active production or Evo 1.3 research inference backend."""
+    if version == settings.EVO13_MODEL_VERSION:
+        return get_evo13_runtime().get_runtime_status()
     return get_evo_runtime().get_runtime_status()
 
 

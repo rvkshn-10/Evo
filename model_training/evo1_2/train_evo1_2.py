@@ -335,7 +335,7 @@ def make_lgbm(seed_offset: int = 0):
         reg_lambda=0.2,
         random_state=SEED + seed_offset,
         verbosity=-1,
-        n_jobs=-1,
+        n_jobs=1,
     )
 
 
@@ -464,58 +464,37 @@ def export_mlp_onnx(final: dict[str, Any], sample: np.ndarray, path: Path) -> No
     )
 
 
-def export_lightgbm_onnx(final: dict[str, Any], input_dim: int, path: Path) -> None:
-    import onnx
-    import onnxmltools
-    from onnx import TensorProto, helper
-    from onnxmltools.convert.common.data_types import FloatTensorType
+def export_lightgbm_onnx(final: dict[str, Any], sample: np.ndarray, path: Path) -> None:
+    """Export LightGBM heads as tensor operators OpenVINO can compile.
 
-    converted = []
-    for head, model in enumerate(final["lgbm_models"]):
-        item = onnxmltools.convert_lightgbm(
-            model,
-            initial_types=[("features", FloatTensorType([None, input_dim]))],
-            target_opset=15,
-        )
-        converted.append(onnx.compose.add_prefix(item, f"h{head}_"))
+    The conventional ONNX converter emits ai.onnx.ml TreeEnsembleRegressor,
+    which current OpenVINO releases do not support. Hummingbird lowers each
+    tree ensemble to ordinary PyTorch/ONNX tensor operations instead.
+    """
+    from hummingbird.ml import convert
 
-    nodes, initializers, sparse, value_info = [], [], [], []
-    outputs = []
-    opsets: dict[str, int] = {"": 17}
-    for head, model in enumerate(converted):
-        prefixed_input = f"h{head}_features"
-        for node in model.graph.node:
-            for index, name in enumerate(node.input):
-                if name == prefixed_input:
-                    node.input[index] = "features"
-            nodes.append(node)
-        initializers.extend(model.graph.initializer)
-        sparse.extend(model.graph.sparse_initializer)
-        value_info.extend(model.graph.value_info)
-        outputs.append(model.graph.output[0].name)
-        for opset in model.opset_import:
-            opsets[opset.domain] = max(opsets.get(opset.domain, 0), opset.version)
-    nodes.append(helper.make_node("Concat", outputs, ["predictions"], axis=1, name="dual_head_concat"))
-    graph = helper.make_graph(
-        nodes,
-        "evo1_2_lightgbm_dual_head",
-        [helper.make_tensor_value_info("features", TensorProto.FLOAT, [None, input_dim])],
-        [helper.make_tensor_value_info("predictions", TensorProto.FLOAT, [None, 2])],
-        initializer=initializers,
-        sparse_initializer=sparse,
-        value_info=value_info,
+    class DualLightGBMTensorModel(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            converter_sample = sample[:1].astype(np.float32)
+            self.success_head = convert(final["lgbm_models"][0], "torch", converter_sample).model
+            self.time_head = convert(final["lgbm_models"][1], "torch", converter_sample).model
+
+        def forward(self, features: torch.Tensor) -> torch.Tensor:
+            return torch.cat((self.success_head(features), self.time_head(features)), dim=1)
+
+    export_model = DualLightGBMTensorModel().eval()
+    torch.onnx.export(
+        export_model,
+        (torch.from_numpy(sample[:2].astype(np.float32)),),
+        path,
+        input_names=["features"], output_names=["predictions"],
+        dynamic_axes={"features": {0: "batch"}, "predictions": {0: "batch"}},
+        opset_version=17, dynamo=False,
     )
-    combined = helper.make_model(
-        graph,
-        producer_name="evo1.2",
-        opset_imports=[helper.make_opsetid(domain, version) for domain, version in opsets.items()],
-    )
-    combined.ir_version = min(combined.ir_version, 10)
-    onnx.checker.check_model(combined)
-    onnx.save(combined, path)
 
 
-def combine_onnx_average(first: Path, second: Path, output: Path) -> None:
+def combine_onnx_average(first: Path, second: Path, output: Path, input_dim: int) -> None:
     import onnx
     from onnx import TensorProto, helper
 
@@ -543,7 +522,7 @@ def combine_onnx_average(first: Path, second: Path, output: Path) -> None:
     )
     graph = helper.make_graph(
         nodes, "evo1_2_ensemble",
-        [helper.make_tensor_value_info("features", TensorProto.FLOAT, [None, None])],
+        [helper.make_tensor_value_info("features", TensorProto.FLOAT, [None, input_dim])],
         [helper.make_tensor_value_info("predictions", TensorProto.FLOAT, [None, 2])],
         initializer=initializers, sparse_initializer=sparse, value_info=value_info,
     )
@@ -575,12 +554,12 @@ def export_selected(
             shutil.copy2(mlp_path, output)
             expected = mlp_predict(final, sample)
         elif winner == "lightgbm_dual_regressors":
-            export_lightgbm_onnx(final, sample.shape[1], lgbm_path)
+            export_lightgbm_onnx(final, sample, lgbm_path)
             shutil.copy2(lgbm_path, output)
             expected = lgbm_predict(final, sample)
         else:
-            export_lightgbm_onnx(final, sample.shape[1], lgbm_path)
-            combine_onnx_average(mlp_path, lgbm_path, output)
+            export_lightgbm_onnx(final, sample, lgbm_path)
+            combine_onnx_average(mlp_path, lgbm_path, output, sample.shape[1])
             expected = (mlp_predict(final, sample) + lgbm_predict(final, sample)) / 2.0
 
     onnx.checker.check_model(onnx.load(str(output)))
