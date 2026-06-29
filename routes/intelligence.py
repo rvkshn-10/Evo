@@ -321,6 +321,7 @@ async def get_high_risk_history(
     until: Optional[str] = Query(default=None),
     risk_level: str = Query(default="high", description="high, medium, high,medium, or all"),
     spot_id: Optional[str] = Query(default=None, description="Filter by monitoring spot id"),
+    latest_per_spot: bool = Query(default=False, description="Keep only the newest row per spot"),
     limit: int = Query(default=200, ge=1, le=5000),
 ):
     since_dt, until_dt = parse_range_params(since, until)
@@ -329,6 +330,7 @@ async def get_high_risk_history(
         until=until_dt,
         risk_level=risk_level,
         spot_id=spot_id,
+        latest_per_spot=latest_per_spot,
         limit=limit,
     )
     return {

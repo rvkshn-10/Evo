@@ -20,6 +20,9 @@ from config.settings import settings
 logger = logging.getLogger(__name__)
 
 _SCHEMA_READY = False
+_SPOT_CAPACITY_HINTS: Optional[dict[str, int]] = None
+
+MONITORING_LOCATIONS_PATH = settings.PROJECT_ROOT / "config" / "monitoring_locations.json"
 
 SQLITE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS disaster_snapshots (
@@ -547,22 +550,116 @@ def _sqlite_timeseries(
         return []
 
 
+def _spot_capacity_hints() -> dict[str, int]:
+    global _SPOT_CAPACITY_HINTS
+    if _SPOT_CAPACITY_HINTS is not None:
+        return _SPOT_CAPACITY_HINTS
+    hints: dict[str, int] = {}
+    if MONITORING_LOCATIONS_PATH.exists():
+        try:
+            payload = json.loads(MONITORING_LOCATIONS_PATH.read_text(encoding="utf-8"))
+            for spot in payload.get("spots", []):
+                spot_id = str(spot.get("id") or "")
+                capacity = int(spot.get("default_occupancy") or 0)
+                if spot_id and capacity > 0:
+                    hints[spot_id] = capacity
+        except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            logger.warning("Could not load monitoring capacity hints: %s", exc)
+    _SPOT_CAPACITY_HINTS = hints
+    return hints
+
+
+def _recompute_risk_fields(row: dict[str, Any]) -> dict[str, Any]:
+    from services.evacuation_predictor import EvacuationPredictor
+
+    rate = row.get("predicted_evacuation_rate")
+    density = row.get("density")
+    occupancy = row.get("occupancy")
+    if rate is None or density is None or occupancy is None:
+        return row
+
+    spot_id = str(row.get("spot_id") or "")
+    capacity_hint = _spot_capacity_hints().get(spot_id)
+    try:
+        risk, reasons = EvacuationPredictor._risk_assessment(
+            float(rate),
+            float(density),
+            int(occupancy),
+            capacity_hint=capacity_hint,
+        )
+    except (TypeError, ValueError):
+        return row
+
+    updated = dict(row)
+    stored = row.get("risk_level")
+    updated["risk_level"] = risk
+    if reasons:
+        updated["risk_reasons"] = reasons
+    if stored and stored != risk:
+        updated["risk_level_stored"] = stored
+    return updated
+
+
+def _latest_per_spot(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    best: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        spot_id = str(row.get("spot_id") or "")
+        if not spot_id:
+            continue
+        prev = best.get(spot_id)
+        if not prev or str(row.get("recorded_at") or "") > str(prev.get("recorded_at") or ""):
+            best[spot_id] = row
+    return sorted(
+        best.values(),
+        key=lambda item: str(item.get("recorded_at") or ""),
+        reverse=True,
+    )
+
+
+def _filter_prediction_rows(
+    rows: list[dict[str, Any]],
+    *,
+    risk_level: Optional[str],
+    limit: int,
+) -> list[dict[str, Any]]:
+    if risk_level and risk_level.lower() not in {"all", "any"}:
+        levels = {part.strip().lower() for part in risk_level.split(",") if part.strip()}
+        rows = [row for row in rows if str(row.get("risk_level") or "").lower() in levels]
+    return rows[:limit]
+
+
 def query_high_risk_predictions(
     *,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     risk_level: Optional[str] = "high",
     spot_id: Optional[str] = None,
+    latest_per_spot: bool = False,
     limit: int = 500,
 ) -> list[dict[str, Any]]:
     ensure_schema()
+    sql_risk_level = None if latest_per_spot else risk_level
+    fetch_limit = max(limit * 20, 500) if latest_per_spot else limit
     if postgres_configured():
-        return _postgres_high_risk(
-            since=since, until=until, risk_level=risk_level, spot_id=spot_id, limit=limit
+        rows = _postgres_high_risk(
+            since=since,
+            until=until,
+            risk_level=sql_risk_level,
+            spot_id=spot_id,
+            limit=fetch_limit,
         )
-    return _sqlite_high_risk(
-        since=since, until=until, risk_level=risk_level, spot_id=spot_id, limit=limit
-    )
+    else:
+        rows = _sqlite_high_risk(
+            since=since,
+            until=until,
+            risk_level=sql_risk_level,
+            spot_id=spot_id,
+            limit=fetch_limit,
+        )
+    rows = _enrich_prediction_rows(rows)
+    if latest_per_spot:
+        rows = _latest_per_spot(rows)
+    return _filter_prediction_rows(rows, risk_level=risk_level, limit=limit)
 
 
 def _enrich_prediction_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -575,7 +672,7 @@ def _enrich_prediction_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 item["predicted_evacuation_success_pct"] = round(float(rate) * 100, 2)
             except (TypeError, ValueError):
                 pass
-        enriched.append(item)
+        enriched.append(_recompute_risk_fields(item))
     return enriched
 
 
@@ -617,7 +714,7 @@ def _sqlite_high_risk(
     try:
         with _sqlite_conn() as conn:
             rows = conn.execute(sql, [*params, limit]).fetchall()
-        return _enrich_prediction_rows([dict(row) for row in rows])
+        return [dict(row) for row in rows]
     except Exception as exc:
         logger.error("Failed high-risk query (sqlite): %s", exc)
         return []
@@ -667,15 +764,13 @@ def _postgres_high_risk(
             "predicted_evacuation_time_min", "event_type", "occupancy", "density",
             "model_name", "recorded_at", "snapshot_id",
         ]
-        return _enrich_prediction_rows(
-            [
-                {
-                    key: (value.isoformat() if hasattr(value, "isoformat") else value)
-                    for key, value in zip(keys, row)
-                }
-                for row in rows
-            ]
-        )
+        return [
+            {
+                key: (value.isoformat() if hasattr(value, "isoformat") else value)
+                for key, value in zip(keys, row)
+            }
+            for row in rows
+        ]
     except Exception as exc:
         logger.error("Failed high-risk query (postgres): %s", exc)
         return []

@@ -181,7 +181,8 @@ async function loadHistoryPanel() {
   const params = new URLSearchParams();
   if (range.since) params.set("since", range.since);
   if (range.until) params.set("until", range.until);
-  params.set("risk_level", spotId && spotId !== "all" ? "all" : "high,medium");
+  params.set("risk_level", "all");
+  params.set("latest_per_spot", "true");
   if (spotId && spotId !== "all") params.set("spot_id", spotId);
   const highRiskQuery = `?${params.toString()}`;
 
