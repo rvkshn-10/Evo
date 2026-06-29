@@ -292,6 +292,12 @@ models/evo1.2/openvino/evo1.2.bin</pre>
 
       <div class="history-toolbar neo-inset">
         <label class="history-range-label">
+          <span>Location</span>
+          <select id="historySpotSelect" class="run-mode-select">
+            <option value="all">All locations</option>
+          </select>
+        </label>
+        <label class="history-range-label">
           <span>Date range</span>
           <select id="historyRangeSelect" class="run-mode-select">
             <option value="7d">Last 7 days</option>
@@ -310,7 +316,7 @@ models/evo1.2/openvino/evo1.2.bin</pre>
 
       <div class="evo-charts-row history-charts-row">
         <div class="evo-chart-card neo-inset">
-          <h3>High-risk spots per run</h3>
+          <h3>Model high-evac-risk spots per run</h3>
           <canvas id="historyRiskChart" width="420" height="180"></canvas>
         </div>
         <div class="evo-chart-card neo-inset">
@@ -320,8 +326,8 @@ models/evo1.2/openvino/evo1.2.bin</pre>
       </div>
 
       <section class="history-table-section">
-        <h3>High-risk predictions</h3>
-        <p class="sidebar-hint">Use exports for full SQL analysis — open the SQLite file in DB Browser or query Neon when configured.</p>
+        <h3>Evacuation model predictions</h3>
+        <p class="sidebar-hint">Risk reflects predicted evacuation readiness (success %, crowd density, occupancy vs site baseline) — not earthquake or weather severity. Exports include <code>predicted_evacuation_success_pct</code> (0–100).</p>
         <div class="table-wrap neo-inset">
           <table>
             <thead>
@@ -329,8 +335,8 @@ models/evo1.2/openvino/evo1.2.bin</pre>
                 <th>Spot</th>
                 <th>Event</th>
                 <th>Occupancy</th>
-                <th>Evac rate</th>
-                <th>Risk</th>
+                <th>Evac success %</th>
+                <th>Model evac risk</th>
                 <th>Recorded</th>
               </tr>
             </thead>

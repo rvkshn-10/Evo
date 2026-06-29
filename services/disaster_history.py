@@ -239,30 +239,43 @@ def _insert_related_rows(
             ),
         )
 
-    for alert in (snapshot.get("alerts") or []) + (snapshot.get("earthquakes") or []):
-        for pred in alert.get("evacuation_predictions") or []:
-            execute(
-                """
-                INSERT INTO evacuation_predictions
-                    (snapshot_id, spot_id, spot_name, model_name, event_type, occupancy, density,
-                     predicted_evacuation_rate, predicted_evacuation_time_min, risk_level, recorded_at, raw)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    snapshot_id,
-                    pred.get("spot_id"),
-                    pred.get("name"),
-                    pred.get("model", model_name),
-                    pred.get("event_type"),
-                    (pred.get("inputs") or {}).get("occupancy"),
-                    (pred.get("inputs") or {}).get("density"),
-                    pred.get("predicted_evacuation_rate"),
-                    pred.get("predicted_evacuation_time_min"),
-                    pred.get("risk_level"),
-                    recorded_at,
-                    json.dumps(pred),
-                ),
-            )
+    def insert_prediction(pred: dict[str, Any]) -> None:
+        execute(
+            """
+            INSERT INTO evacuation_predictions
+                (snapshot_id, spot_id, spot_name, model_name, event_type, occupancy, density,
+                 predicted_evacuation_rate, predicted_evacuation_time_min, risk_level, recorded_at, raw)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                snapshot_id,
+                pred.get("spot_id"),
+                pred.get("name"),
+                pred.get("model", model_name),
+                pred.get("event_type"),
+                (pred.get("inputs") or {}).get("occupancy"),
+                (pred.get("inputs") or {}).get("density"),
+                pred.get("predicted_evacuation_rate"),
+                pred.get("predicted_evacuation_time_min"),
+                pred.get("risk_level"),
+                recorded_at,
+                json.dumps(pred),
+            ),
+        )
+
+    spot_preds = snapshot.get("spot_predictions") or []
+    if spot_preds:
+        for pred in spot_preds:
+            insert_prediction(pred)
+    else:
+        seen_spots: set[str] = set()
+        for alert in (snapshot.get("alerts") or []) + (snapshot.get("earthquakes") or []):
+            for pred in alert.get("evacuation_predictions") or []:
+                spot_key = str(pred.get("spot_id") or "")
+                if not spot_key or spot_key in seen_spots:
+                    continue
+                seen_spots.add(spot_key)
+                insert_prediction(pred)
 
 
 def _save_postgres(snapshot: dict[str, Any], *, run_mode: str) -> Optional[int]:
@@ -539,12 +552,31 @@ def query_high_risk_predictions(
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     risk_level: Optional[str] = "high",
+    spot_id: Optional[str] = None,
     limit: int = 500,
 ) -> list[dict[str, Any]]:
     ensure_schema()
     if postgres_configured():
-        return _postgres_high_risk(since=since, until=until, risk_level=risk_level, limit=limit)
-    return _sqlite_high_risk(since=since, until=until, risk_level=risk_level, limit=limit)
+        return _postgres_high_risk(
+            since=since, until=until, risk_level=risk_level, spot_id=spot_id, limit=limit
+        )
+    return _sqlite_high_risk(
+        since=since, until=until, risk_level=risk_level, spot_id=spot_id, limit=limit
+    )
+
+
+def _enrich_prediction_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    enriched: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        rate = item.get("predicted_evacuation_rate")
+        if rate is not None:
+            try:
+                item["predicted_evacuation_success_pct"] = round(float(rate) * 100, 2)
+            except (TypeError, ValueError):
+                pass
+        enriched.append(item)
+    return enriched
 
 
 def _sqlite_high_risk(
@@ -552,6 +584,7 @@ def _sqlite_high_risk(
     since: Optional[datetime],
     until: Optional[datetime],
     risk_level: Optional[str],
+    spot_id: Optional[str],
     limit: int,
 ) -> list[dict[str, Any]]:
     clauses: list[str] = []
@@ -562,6 +595,9 @@ def _sqlite_high_risk(
     if until:
         clauses.append("recorded_at <= ?")
         params.append(_iso(until))
+    if spot_id and spot_id.lower() not in {"all", "any"}:
+        clauses.append("spot_id = ?")
+        params.append(spot_id)
     if risk_level and risk_level.lower() not in {"all", "any"}:
         levels = [part.strip().lower() for part in risk_level.split(",") if part.strip()]
         if levels:
@@ -581,7 +617,7 @@ def _sqlite_high_risk(
     try:
         with _sqlite_conn() as conn:
             rows = conn.execute(sql, [*params, limit]).fetchall()
-        return [dict(row) for row in rows]
+        return _enrich_prediction_rows([dict(row) for row in rows])
     except Exception as exc:
         logger.error("Failed high-risk query (sqlite): %s", exc)
         return []
@@ -592,6 +628,7 @@ def _postgres_high_risk(
     since: Optional[datetime],
     until: Optional[datetime],
     risk_level: Optional[str],
+    spot_id: Optional[str],
     limit: int,
 ) -> list[dict[str, Any]]:
     clauses: list[str] = []
@@ -602,6 +639,9 @@ def _postgres_high_risk(
     if until:
         clauses.append("recorded_at <= %s")
         all_params.append(until)
+    if spot_id and spot_id.lower() not in {"all", "any"}:
+        clauses.append("spot_id = %s")
+        all_params.append(spot_id)
     if risk_level and risk_level.lower() not in {"all", "any"}:
         levels = [part.strip().lower() for part in risk_level.split(",") if part.strip()]
         if levels:
@@ -627,13 +667,15 @@ def _postgres_high_risk(
             "predicted_evacuation_time_min", "event_type", "occupancy", "density",
             "model_name", "recorded_at", "snapshot_id",
         ]
-        return [
-            {
-                key: (value.isoformat() if hasattr(value, "isoformat") else value)
-                for key, value in zip(keys, row)
-            }
-            for row in rows
-        ]
+        return _enrich_prediction_rows(
+            [
+                {
+                    key: (value.isoformat() if hasattr(value, "isoformat") else value)
+                    for key, value in zip(keys, row)
+                }
+                for row in rows
+            ]
+        )
     except Exception as exc:
         logger.error("Failed high-risk query (postgres): %s", exc)
         return []
@@ -668,10 +710,11 @@ def _collect_export_rows(
     *,
     since: Optional[datetime],
     until: Optional[datetime],
+    spot_id: Optional[str] = None,
 ) -> dict[str, list[dict[str, Any]]]:
     snapshots = get_history_timeseries(since=since, until=until)
     predictions = query_high_risk_predictions(
-        since=since, until=until, risk_level="all", limit=5000
+        since=since, until=until, risk_level="all", spot_id=spot_id, limit=5000
     )
     hazards: list[dict[str, Any]] = []
     ensure_schema()
@@ -728,6 +771,7 @@ def build_json_export(
     *,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
+    spot_id: Optional[str] = None,
 ) -> bytes:
     payload = {
         "exported_at": _iso(_utc_now()),
@@ -735,8 +779,9 @@ def build_json_export(
         "range": {
             "since": _iso(since) if since else None,
             "until": _iso(until) if until else None,
+            "spot_id": spot_id,
         },
-        **_collect_export_rows(since=since, until=until),
+        **_collect_export_rows(since=since, until=until, spot_id=spot_id),
     }
     return json.dumps(payload, indent=2).encode("utf-8")
 
@@ -755,8 +800,9 @@ def build_csv_zip_export(
     *,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
+    spot_id: Optional[str] = None,
 ) -> bytes:
-    data = _collect_export_rows(since=since, until=until)
+    data = _collect_export_rows(since=since, until=until, spot_id=spot_id)
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         for name, rows in data.items():
@@ -765,7 +811,7 @@ def build_csv_zip_export(
             "README.txt",
             "FCUSD evacuation intelligence export\n"
             "snapshots.csv — one row per Run Agent\n"
-            "predictions.csv — evacuation predictions per spot\n"
+            "predictions.csv — evacuation predictions per spot (predicted_evacuation_success_pct is 0–100)\n"
             "hazards.csv — NOAA/USGS hazard events\n",
         )
     return buffer.getvalue()

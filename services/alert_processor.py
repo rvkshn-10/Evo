@@ -89,6 +89,7 @@ class AlertProcessor:
         hazard_enriched_spots = [
             enrich_spot_with_hazards(spot, live_hazards) for spot in self.locations
         ]
+        spot_predictions = self._build_spot_predictions(live_hazards)
 
         heatmap_points = _build_heatmap_points(
             enriched_alerts, enriched_quakes, eew_candidates, gdacs_events, wildfires
@@ -110,6 +111,7 @@ class AlertProcessor:
             ),
             "monitoring_spots": self.locations,
             "hazard_enriched_spots": hazard_enriched_spots,
+            "spot_predictions": spot_predictions,
             "gdacs_events": gdacs_events,
             "wildfire_hotspots": wildfires,
             "feed_sources": _active_feed_sources(self.firms),
@@ -121,10 +123,7 @@ class AlertProcessor:
                 "active_alerts": len(alerts),
                 "significant_earthquakes": len(earthquakes),
                 "high_risk_spots": sum(
-                    1
-                    for alert in enriched_alerts
-                    for spot in alert.get("evacuation_predictions", [])
-                    if spot.get("risk_level") == "high"
+                    1 for spot in spot_predictions if spot.get("risk_level") == "high"
                 ),
             },
             "prediction_policy": (
@@ -181,6 +180,60 @@ class AlertProcessor:
             "peoplesense": occupancy_overlay,
             "evacuation_predictions": predictions,
         }
+
+    def _build_spot_predictions(self, live_hazards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """One baseline evac prediction per monitoring site (not duplicated per alert)."""
+        occupancy_overlay = self.peoplesense.get_alert_overlay(
+            alert_id="regional_baseline",
+            spots=self.locations,
+        )
+        mapped: dict[str, dict[str, Any]] = {}
+        for spot in self.locations:
+            reading = next(
+                (
+                    r
+                    for r in occupancy_overlay["zones"]
+                    if r.get("zone_name") == spot["name"]
+                ),
+                None,
+            )
+            if reading:
+                mapped[spot["id"]] = reading
+
+        hazard_by_spot = {
+            spot["id"]: enrich_spot_with_hazards(spot, live_hazards) for spot in self.locations
+        }
+
+        predictions: list[dict[str, Any]] = []
+        for spot in self.locations:
+            reading = mapped.get(spot["id"], {})
+            hazard = hazard_by_spot.get(spot["id"], {})
+            occupancy = int(
+                reading.get("occupancy_count")
+                or spot.get("default_occupancy")
+                or 0
+            )
+            density = float(
+                reading.get("occupancy_density")
+                or spot.get("default_density")
+                or 0.3
+            )
+            event_type = str(hazard.get("dominant_event_type") or "other")
+            predictions.append(
+                self.predictor.predict_for_spot(
+                    spot_id=spot["id"],
+                    name=spot["name"],
+                    category=spot.get("category", "Office Building"),
+                    occupancy=occupancy,
+                    density=density,
+                    event_type=event_type,
+                    lat=spot.get("lat"),
+                    lon=spot.get("lon"),
+                    hazard=hazard,
+                    capacity_hint=int(spot.get("default_occupancy") or 0) or None,
+                )
+            )
+        return predictions
 
     def save_snapshot(self, snapshot: dict[str, Any]) -> Path:
         out_dir = Path(settings.OUTPUT_DIR) / "dashboard"

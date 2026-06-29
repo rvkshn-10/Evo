@@ -119,11 +119,26 @@ function formatWhen(value) {
   return new Date(value).toLocaleString();
 }
 
+function formatEvacSuccess(row) {
+  if (row.predicted_evacuation_success_pct != null) {
+    return `${Number(row.predicted_evacuation_success_pct).toFixed(1)}%`;
+  }
+  if (row.predicted_evacuation_rate != null) {
+    return `${(Number(row.predicted_evacuation_rate) * 100).toFixed(1)}%`;
+  }
+  return "—";
+}
+
+function formatModelRisk(level) {
+  if (!level) return "—";
+  return level;
+}
+
 function renderHighRiskTable(rows) {
   const body = document.getElementById("historyHighRiskBody");
   if (!body) return;
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="6" class="subtitle">No high-risk predictions in this range.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" class="subtitle">No predictions in this range for the selected location.</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -134,26 +149,51 @@ function renderHighRiskTable(rows) {
         <td>${row.spot_name || row.spot_id || "—"}</td>
         <td>${row.event_type || "—"}</td>
         <td>${row.occupancy ?? "—"}</td>
-        <td>${row.predicted_evacuation_rate != null ? `${row.predicted_evacuation_rate}%` : "—"}</td>
-        <td><span class="risk-${row.risk_level || "low"}">${row.risk_level || "—"}</span></td>
+        <td>${formatEvacSuccess(row)}</td>
+        <td><span class="risk-${row.risk_level || "low"}" title="Model evac readiness — not earthquake severity">${formatModelRisk(row.risk_level)}</span></td>
         <td>${formatWhen(row.recorded_at)}</td>
       </tr>`,
     )
     .join("");
 }
 
+function populateSpotSelect(spots) {
+  const select = document.getElementById("historySpotSelect");
+  if (!select) return;
+  const current = select.value || "all";
+  const options = [
+    `<option value="all">All locations</option>`,
+    ...(spots || []).map(
+      (spot) => `<option value="${spot.id}">${spot.name || spot.id}</option>`,
+    ),
+  ];
+  select.innerHTML = options.join("");
+  if ([...select.options].some((opt) => opt.value === current)) {
+    select.value = current;
+  }
+}
+
 async function loadHistoryPanel() {
   const preset = document.getElementById("historyRangeSelect")?.value || "30d";
+  const spotId = document.getElementById("historySpotSelect")?.value || "all";
   const range = getRangeFromPreset(preset);
   const query = rangeQuery(range);
+  const params = new URLSearchParams();
+  if (range.since) params.set("since", range.since);
+  if (range.until) params.set("until", range.until);
+  params.set("risk_level", spotId && spotId !== "all" ? "all" : "high,medium");
+  if (spotId && spotId !== "all") params.set("spot_id", spotId);
+  const highRiskQuery = `?${params.toString()}`;
 
   const [meta, timeseries, highRisk] = await Promise.all([
     fetch(apiUrl("/api/history?limit=5")).then((r) => r.json()).catch(() => null),
     fetch(apiUrl(`/api/history/timeseries${query}`)).then((r) => r.json()).catch(() => null),
-    fetch(apiUrl(`/api/history/high-risk${query}&risk_level=high,medium`))
+    fetch(apiUrl(`/api/history/high-risk${highRiskQuery}`))
       .then((r) => r.json())
       .catch(() => null),
   ]);
+
+  populateSpotSelect(meta?.monitoring_spots || highRisk?.monitoring_spots || []);
 
   const storageEl = document.getElementById("historyStorageNote");
   if (storageEl && meta?.storage) {
@@ -180,10 +220,12 @@ async function loadHistoryPanel() {
 
 function downloadExport(format) {
   const preset = document.getElementById("historyRangeSelect")?.value || "30d";
+  const spotId = document.getElementById("historySpotSelect")?.value || "all";
   const range = getRangeFromPreset(preset);
   const params = new URLSearchParams({ format });
   if (range.since) params.set("since", range.since);
   if (range.until) params.set("until", range.until);
+  if (spotId && spotId !== "all") params.set("spot_id", spotId);
   window.open(apiUrl(`/api/history/export?${params}`), "_blank");
 }
 
@@ -209,6 +251,7 @@ export function initHistoryPanel() {
   document.getElementById("historyModalClose")?.addEventListener("click", closeHistoryModal);
   document.getElementById("historyModalBackdrop")?.addEventListener("click", closeHistoryModal);
   document.getElementById("historyRangeSelect")?.addEventListener("change", loadHistoryPanel);
+  document.getElementById("historySpotSelect")?.addEventListener("change", loadHistoryPanel);
   document.getElementById("exportJsonBtn")?.addEventListener("click", () => downloadExport("json"));
   document.getElementById("exportCsvBtn")?.addEventListener("click", () => downloadExport("csv"));
   document.getElementById("exportSqliteBtn")?.addEventListener("click", () => downloadExport("sqlite"));

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
@@ -42,6 +44,21 @@ from services.usgs_client import USGSClient
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["intelligence"])
+
+MONITORING_LOCATIONS_PATH = (
+    Path(__file__).resolve().parents[1] / "config" / "monitoring_locations.json"
+)
+
+
+def _load_monitoring_spots() -> list[dict]:
+    if not MONITORING_LOCATIONS_PATH.exists():
+        return []
+    payload = json.loads(MONITORING_LOCATIONS_PATH.read_text(encoding="utf-8"))
+    return [
+        {"id": spot.get("id"), "name": spot.get("name")}
+        for spot in payload.get("spots", [])
+        if spot.get("id")
+    ]
 
 _processor = AlertProcessor()
 _noaa = NOAAClient()
@@ -279,6 +296,7 @@ async def get_disaster_history(limit: int = Query(default=20, ge=1, le=100)):
         "storage": storage,
         "neon_configured": postgres_configured(),
         "total_snapshots": count_snapshots(),
+        "monitoring_spots": _load_monitoring_spots(),
         "snapshots": get_recent_history(limit=limit),
     }
 
@@ -302,6 +320,7 @@ async def get_high_risk_history(
     since: Optional[str] = Query(default=None),
     until: Optional[str] = Query(default=None),
     risk_level: str = Query(default="high", description="high, medium, high,medium, or all"),
+    spot_id: Optional[str] = Query(default=None, description="Filter by monitoring spot id"),
     limit: int = Query(default=200, ge=1, le=5000),
 ):
     since_dt, until_dt = parse_range_params(since, until)
@@ -309,12 +328,15 @@ async def get_high_risk_history(
         since=since_dt,
         until=until_dt,
         risk_level=risk_level,
+        spot_id=spot_id,
         limit=limit,
     )
     return {
         "storage": get_storage_info(),
         "range": {"since": since, "until": until},
         "risk_level": risk_level,
+        "spot_id": spot_id,
+        "monitoring_spots": _load_monitoring_spots(),
         "count": len(rows),
         "predictions": rows,
     }
@@ -325,12 +347,13 @@ async def export_disaster_history(
     format: str = Query(default="json", pattern="^(json|csv|sqlite)$"),
     since: Optional[str] = Query(default=None),
     until: Optional[str] = Query(default=None),
+    spot_id: Optional[str] = Query(default=None, description="Filter predictions by spot id"),
 ):
     since_dt, until_dt = parse_range_params(since, until)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     if format == "json":
-        payload = build_json_export(since=since_dt, until=until_dt)
+        payload = build_json_export(since=since_dt, until=until_dt, spot_id=spot_id)
         return Response(
             content=payload,
             media_type="application/json",
@@ -338,7 +361,7 @@ async def export_disaster_history(
         )
 
     if format == "csv":
-        payload = build_csv_zip_export(since=since_dt, until=until_dt)
+        payload = build_csv_zip_export(since=since_dt, until=until_dt, spot_id=spot_id)
         return Response(
             content=payload,
             media_type="application/zip",

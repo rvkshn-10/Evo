@@ -114,6 +114,7 @@ class EvacuationPredictor:
         lat: Optional[float] = None,
         lon: Optional[float] = None,
         hazard: Optional[dict[str, Any]] = None,
+        capacity_hint: Optional[int] = None,
     ) -> dict[str, Any]:
         scenario = scenario or SCENARIO_BY_EVENT.get(event_type, "Standard Evacuation Drill")
         category = CATEGORY_ALIASES.get(category.lower(), category)
@@ -131,6 +132,7 @@ class EvacuationPredictor:
                 lat=lat,
                 lon=lon,
                 hazard=hazard,
+                capacity_hint=capacity_hint,
             )
 
         knn = self._predict_knn(
@@ -143,6 +145,7 @@ class EvacuationPredictor:
             scenario=scenario,
             lat=lat,
             lon=lon,
+            capacity_hint=capacity_hint,
         )
 
         if not (self.use_evo and self._evo and self._evo.is_available):
@@ -169,6 +172,7 @@ class EvacuationPredictor:
                 "predicted_evacuation_success_pct": knn["predicted_evacuation_success_pct"],
                 "predicted_evacuation_rate": knn["predicted_evacuation_rate"],
                 "risk_level": knn["risk_level"],
+                "risk_reasons": knn.get("risk_reasons", []),
                 "predicted_evacuation_time_min": (
                     evo_out["predicted_evacuation_time_min"]
                     if use_evo_time
@@ -208,6 +212,7 @@ class EvacuationPredictor:
         lat: Optional[float],
         lon: Optional[float],
         hazard: dict[str, Any],
+        capacity_hint: Optional[int] = None,
     ) -> dict[str, Any]:
         knn = self._predict_knn(
             spot_id=spot_id,
@@ -219,6 +224,7 @@ class EvacuationPredictor:
             scenario=scenario,
             lat=lat,
             lon=lon,
+            capacity_hint=capacity_hint,
             k=35,
             model_label="evo1.3_research_knn",
         )
@@ -254,7 +260,7 @@ class EvacuationPredictor:
         success = max(75.0, min(99.5, success))
         evac_time = max(3.0, min(25.0, evac_time))
         evac_rate = max(0.0, min(1.0, success / 100.0))
-        risk = self._risk_band(evac_rate, density, occupancy)
+        risk, reasons = self._risk_assessment(evac_rate, density, occupancy, capacity_hint=capacity_hint)
         confidence = 0.58 if evo_source else 0.52
 
         return {
@@ -271,6 +277,7 @@ class EvacuationPredictor:
             "predicted_evacuation_rate": round(evac_rate, 4),
             "predicted_evacuation_time_min": round(evac_time, 2),
             "risk_level": risk,
+            "risk_reasons": reasons,
             "confidence": confidence,
             "model": model_name,
             "inference_mode": inference_mode,
@@ -296,6 +303,7 @@ class EvacuationPredictor:
         lon: Optional[float],
         k: int = 25,
         model_label: str = "knn_reference_dataset",
+        capacity_hint: Optional[int] = None,
     ) -> dict[str, Any]:
         neighbors = self._nearest_neighbors(
             occupancy=occupancy,
@@ -316,6 +324,7 @@ class EvacuationPredictor:
                 scenario=scenario,
                 lat=lat,
                 lon=lon,
+                capacity_hint=capacity_hint,
             )
 
         weights = [n["weight"] for n in neighbors]
@@ -324,7 +333,7 @@ class EvacuationPredictor:
         evac_time = sum(n["record"]["evacuation_time_min"] * n["weight"] for n in neighbors) / weight_sum
         evac_rate = max(0.0, min(1.0, success / 100.0))
 
-        risk = self._risk_band(evac_rate, density, occupancy)
+        risk, reasons = self._risk_assessment(evac_rate, density, occupancy, capacity_hint=capacity_hint)
         return {
             "spot_id": spot_id,
             "name": name,
@@ -341,6 +350,7 @@ class EvacuationPredictor:
             "predicted_evacuation_rate": round(evac_rate, 4),
             "predicted_evacuation_time_min": round(evac_time, 2),
             "risk_level": risk,
+            "risk_reasons": reasons,
             "confidence": round(min(0.95, 0.55 + len(neighbors) / 50), 2),
             "reference_samples": len(neighbors),
             "model": model_label,
@@ -367,6 +377,7 @@ class EvacuationPredictor:
             occupancy = int(occ.get("occupancy_count", spot.get("default_occupancy", 500)))
             density = float(occ.get("occupancy_density", spot.get("default_density", 0.4)))
             hazard = {**alert_hazard, **hazard_by_spot.get(spot_id, {})}
+            capacity_hint = int(spot.get("default_occupancy") or 0) or None
 
             prediction = self.predict_for_spot(
                 spot_id=spot_id,
@@ -378,6 +389,7 @@ class EvacuationPredictor:
                 lat=spot.get("lat"),
                 lon=spot.get("lon"),
                 hazard=hazard,
+                capacity_hint=capacity_hint,
             )
             prediction["alert_id"] = alert.get("id")
             prediction["alert_event"] = alert.get("event")
@@ -396,6 +408,7 @@ class EvacuationPredictor:
         event_type: str,
         hazard: Optional[dict[str, Any]] = None,
         runtime: Any = None,
+        capacity_hint: Optional[int] = None,
     ) -> Optional[dict[str, Any]]:
         from services.evo_features import encode_features
 
@@ -437,13 +450,16 @@ class EvacuationPredictor:
         success = out["evacuation_success_pct"]
         evac_time = out["evacuation_time_min"]
         evac_rate = max(0.0, min(1.0, success / 100.0))
-        risk = self._risk_band(evac_rate, density, occupancy)
+        risk, reasons = self._risk_assessment(
+            evac_rate, density, occupancy, capacity_hint=capacity_hint
+        )
         model_version = getattr(evo, "model_version", settings.EVO_MODEL_VERSION)
         return {
             "predicted_evacuation_success_pct": round(success, 2),
             "predicted_evacuation_rate": round(evac_rate, 4),
             "predicted_evacuation_time_min": round(evac_time, 2),
             "risk_level": risk,
+            "risk_reasons": reasons,
             "confidence": 0.88,
             "reference_samples": 0,
             "model": model_version,
@@ -488,12 +504,47 @@ class EvacuationPredictor:
         return occ_delta + density_delta + category_penalty + scenario_penalty
 
     @staticmethod
-    def _risk_band(evac_rate: float, density: float, occupancy: int) -> str:
-        if evac_rate < 0.9 or density > 0.85 or occupancy > 1500:
-            return "high"
+    def _risk_assessment(
+        evac_rate: float,
+        density: float,
+        occupancy: int,
+        *,
+        capacity_hint: Optional[int] = None,
+    ) -> tuple[str, list[str]]:
+        """Model evac readiness — NOT earthquake severity. evac_rate is 0–1 fraction."""
+        reasons: list[str] = []
+        if evac_rate < 0.9:
+            reasons.append("low_predicted_evac_success")
+        if density > 0.85:
+            reasons.append("high_crowd_density")
+        if capacity_hint and capacity_hint > 0:
+            if occupancy > capacity_hint * 1.25:
+                reasons.append("occupancy_above_site_baseline")
+        elif occupancy > 2500:
+            reasons.append("very_high_occupancy")
+
+        overcrowded = (
+            capacity_hint and capacity_hint > 0 and occupancy > capacity_hint * 1.25
+        ) or (not capacity_hint and occupancy > 2500)
+
+        if evac_rate < 0.9 or density > 0.85 or overcrowded:
+            return "high", reasons
         if evac_rate < 0.95 or density > 0.6:
-            return "medium"
-        return "low"
+            return "medium", reasons
+        return "low", reasons
+
+    @staticmethod
+    def _risk_band(
+        evac_rate: float,
+        density: float,
+        occupancy: int,
+        *,
+        capacity_hint: Optional[int] = None,
+    ) -> str:
+        level, _ = EvacuationPredictor._risk_assessment(
+            evac_rate, density, occupancy, capacity_hint=capacity_hint
+        )
+        return level
 
     @staticmethod
     def _fallback_prediction(
@@ -507,10 +558,14 @@ class EvacuationPredictor:
         scenario: str,
         lat: Optional[float],
         lon: Optional[float],
+        capacity_hint: Optional[int] = None,
     ) -> dict[str, Any]:
         base_success = 96.5 - (density * 8) - (occupancy / 2500)
         evac_time = 5.5 + (density * 2.5) + (occupancy / 900)
         evac_rate = max(0.0, min(1.0, base_success / 100.0))
+        risk, reasons = EvacuationPredictor._risk_assessment(
+            evac_rate, density, occupancy, capacity_hint=capacity_hint
+        )
         return {
             "spot_id": spot_id,
             "name": name,
@@ -523,7 +578,8 @@ class EvacuationPredictor:
             "predicted_evacuation_success_pct": round(base_success, 2),
             "predicted_evacuation_rate": round(evac_rate, 4),
             "predicted_evacuation_time_min": round(evac_time, 2),
-            "risk_level": "medium",
+            "risk_level": risk,
+            "risk_reasons": reasons,
             "confidence": 0.45,
             "reference_samples": 0,
             "model": "heuristic_fallback",
