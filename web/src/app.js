@@ -47,14 +47,16 @@ function isFilterActive(category) {
 
 function setConnectionBadge(mode) {
   const el = document.getElementById("connectionBadge");
+  if (!el) return;
+  const cloud = isCloudHostedDashboard();
   if (mode === "live") {
-    el.textContent = "API: Live";
+    el.textContent = cloud ? "Oracle VM · Live" : "Local · Live";
     el.className = "badge badge-live";
   } else if (mode === "demo") {
-    el.textContent = "API: Demo data";
+    el.textContent = "Demo data";
     el.className = "badge badge-demo";
   } else {
-    el.textContent = "API: Offline";
+    el.textContent = cloud ? "Oracle VM · Offline" : "Local · Offline";
     el.className = "badge badge-offline";
   }
 }
