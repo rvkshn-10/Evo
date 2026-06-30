@@ -21,16 +21,17 @@
   <header class="topbar glass-bar">
     <div class="brand">
       <h1>Evo</h1>
-      <p class="subtitle">Evacuation intelligence · NOAA · USGS · GDACS · PeopleSense</p>
+      <p class="subtitle brand-subtitle-full">Evacuation intelligence · NOAA · USGS · GDACS · PeopleSense</p>
+      <p class="subtitle brand-subtitle-short">Evacuation intelligence</p>
     </div>
     <div class="actions">
       <button id="historyBtn" class="btn neo-btn" type="button" title="Run history, charts, and export">
-        <span class="btn-icon">📊</span> History
+        <span class="btn-icon" aria-hidden="true">📊</span><span class="btn-label">History</span>
       </button>
       <button id="showEvoBtn" class="btn neo-btn" type="button" title="Open model architecture and validation metrics">
-        <span class="btn-icon">◈</span> Model
+        <span class="btn-icon" aria-hidden="true">◈</span><span class="btn-label">Model</span>
       </button>
-      <button id="notifyBtn" class="btn neo-btn" type="button" title="Enable desktop notifications">🔔 Notify</button>
+      <button id="notifyBtn" class="btn neo-btn" type="button" title="Enable desktop notifications"><span aria-hidden="true">🔔</span><span class="btn-label"> Notify</span></button>
       <div class="run-mode-picker neo-inset">
         <span class="run-mode-picker-label">Run mode</span>
         <select id="runModeSelect" class="run-mode-select-native" aria-label="Run mode">
@@ -103,8 +104,10 @@
         <strong>Neural Compute Stick not available here.</strong> This Vercel site uses the cloud API — there is no USB port for an NCS. Evo runs on <strong>CPU only</strong> in production. For NCS1/NCS2, run <code>python3 main.py</code> on your Mac and open <code>http://localhost:5173</code>.
       </p>
       <button id="refreshBtn" class="btn neo-btn primary" type="button">Run Agent</button>
-      <span id="connectionBadge" class="badge glass-pill">Connecting to VM…</span>
-      <span id="modeBadge" class="badge glass-pill">loading…</span>
+      <div class="status-badges">
+        <span id="connectionBadge" class="badge glass-pill">Connecting to VM…</span>
+        <span id="modeBadge" class="badge glass-pill">loading…</span>
+      </div>
     </div>
   </header>
 
@@ -122,7 +125,8 @@
   </div>
 
   <div class="app-shell">
-    <aside class="sidebar glass-panel neo-card">
+    <div id="layersBackdrop" class="layers-backdrop" hidden></div>
+    <aside id="mapSidebar" class="sidebar glass-panel neo-card">
       <h2>Map Layers</h2>
       <p class="sidebar-hint">Toggle hazard types — multiple can be shown at once.</p>
       <div id="filterList" class="filter-list"></div>
@@ -136,6 +140,17 @@
     <div class="main-content">
       <main class="layout">
         <section class="panel map-panel glass-panel neo-card">
+          <div class="map-panel-toolbar">
+            <button
+              id="layersToggleBtn"
+              class="btn neo-btn layers-toggle-btn"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mapSidebar"
+            >
+              <span aria-hidden="true">☰</span> Layers
+            </button>
+          </div>
           <div id="map"></div>
           <div class="map-legend">
             <span class="legend-item heat">● Heatmap intensity</span>
@@ -166,7 +181,7 @@
         <section class="panel predictions-panel glass-panel neo-card">
           <h2>Evacuation Predictions</h2>
           <div class="table-wrap neo-inset">
-            <table>
+            <table class="responsive-table">
               <thead>
                 <tr>
                   <th>Spot</th>
@@ -329,7 +344,7 @@ models/evo1.2/openvino/evo1.2.bin</pre>
         <h3>Latest prediction per location</h3>
         <p class="sidebar-hint">Shows the most recent run for each site. Risk is recomputed from occupancy, density, and evac success — not earthquake severity.</p>
         <div class="table-wrap neo-inset">
-          <table>
+          <table class="responsive-table">
             <thead>
               <tr>
                 <th>Spot</th>

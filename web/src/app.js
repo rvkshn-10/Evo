@@ -488,6 +488,47 @@ function renderAlerts(snapshot) {
     .join("");
 }
 
+function scheduleMapResize() {
+  if (!map) return;
+  window.requestAnimationFrame(() => {
+    map.invalidateSize();
+  });
+}
+
+function initLayersDrawer() {
+  const shell = document.querySelector(".app-shell");
+  const btn = document.getElementById("layersToggleBtn");
+  const backdrop = document.getElementById("layersBackdrop");
+  if (!shell || !btn) return;
+
+  const close = () => {
+    shell.classList.remove("layers-open");
+    backdrop?.setAttribute("hidden", "");
+    btn.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("layers-drawer-open");
+    scheduleMapResize();
+  };
+
+  const open = () => {
+    shell.classList.add("layers-open");
+    backdrop?.removeAttribute("hidden");
+    btn.setAttribute("aria-expanded", "true");
+    document.body.classList.add("layers-drawer-open");
+    scheduleMapResize();
+  };
+
+  btn.addEventListener("click", () => {
+    if (shell.classList.contains("layers-open")) close();
+    else open();
+  });
+
+  backdrop?.addEventListener("click", close);
+  window.addEventListener("resize", scheduleMapResize);
+  window.addEventListener("orientationchange", () => {
+    window.setTimeout(scheduleMapResize, 200);
+  });
+}
+
 function renderPredictions(snapshot) {
   const rows = [];
   const alerts = [...getFilteredEarthquakes(snapshot), ...getFilteredAlerts(snapshot)];
@@ -496,20 +537,21 @@ function renderPredictions(snapshot) {
     (alert.evacuation_predictions || []).forEach((prediction) => {
       rows.push(`
         <tr>
-          <td>${prediction.name}</td>
-          <td>${alert.event || alert.headline || "Alert"}</td>
-          <td>${prediction.inputs?.occupancy ?? "—"}</td>
-          <td>${(prediction.predicted_evacuation_rate * 100).toFixed(1)}%</td>
-          <td>${prediction.predicted_evacuation_time_min}</td>
-          <td><span class="${riskClass(prediction.risk_level)}">${prediction.risk_level}</span></td>
-          <td><code>${prediction.model || "—"}</code></td>
+          <td data-label="Spot">${prediction.name}</td>
+          <td data-label="Alert">${alert.event || alert.headline || "Alert"}</td>
+          <td data-label="Occupancy">${prediction.inputs?.occupancy ?? "—"}</td>
+          <td data-label="Evac rate">${(prediction.predicted_evacuation_rate * 100).toFixed(1)}%</td>
+          <td data-label="Time (min)">${prediction.predicted_evacuation_time_min}</td>
+          <td data-label="Risk"><span class="${riskClass(prediction.risk_level)}">${prediction.risk_level}</span></td>
+          <td data-label="Model"><code>${prediction.model || "—"}</code></td>
         </tr>
       `);
     });
   });
 
   document.getElementById("predictionsBody").innerHTML =
-    rows.join("") || "<tr><td colspan='7'>No predictions for selected filters.</td></tr>";
+    rows.join("")
+    || "<tr class=\"table-empty\"><td colspan=\"7\">No predictions for selected filters.</td></tr>";
 }
 
 function parseMagnitude(quake) {
@@ -629,6 +671,7 @@ function renderMap(snapshot) {
       radius: Math.max(15000, mag * 8000),
     }).addTo(markersLayer);
   });
+  scheduleMapResize();
 }
 
 function renderSnapshot(snapshot) {
@@ -736,6 +779,7 @@ async function refresh() {
 
 export async function initApp() {
   renderFilters();
+  initLayersDrawer();
 
   document.getElementById("heatmapToggle").addEventListener("change", (e) => {
     showHeatmap = e.target.checked;

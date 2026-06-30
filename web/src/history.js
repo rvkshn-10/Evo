@@ -138,7 +138,7 @@ function renderHighRiskTable(rows) {
   const body = document.getElementById("historyHighRiskBody");
   if (!body) return;
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="6" class="subtitle">No predictions in this range for the selected location.</td></tr>`;
+    body.innerHTML = `<tr class="table-empty"><td colspan="6" class="subtitle">No predictions in this range for the selected location.</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -146,12 +146,12 @@ function renderHighRiskTable(rows) {
     .map(
       (row) => `
       <tr>
-        <td>${row.spot_name || row.spot_id || "—"}</td>
-        <td>${row.event_type || "—"}</td>
-        <td>${row.occupancy ?? "—"}</td>
-        <td>${formatEvacSuccess(row)}</td>
-        <td><span class="risk-${row.risk_level || "low"}" title="Model evac readiness — not earthquake severity">${formatModelRisk(row.risk_level)}</span></td>
-        <td>${formatWhen(row.recorded_at)}</td>
+        <td data-label="Spot">${row.spot_name || row.spot_id || "—"}</td>
+        <td data-label="Event">${row.event_type || "—"}</td>
+        <td data-label="Occupancy">${row.occupancy ?? "—"}</td>
+        <td data-label="Evac success %">${formatEvacSuccess(row)}</td>
+        <td data-label="Model evac risk"><span class="risk-${row.risk_level || "low"}" title="Model evac readiness — not earthquake severity">${formatModelRisk(row.risk_level)}</span></td>
+        <td data-label="Recorded">${formatWhen(row.recorded_at)}</td>
       </tr>`,
     )
     .join("");
