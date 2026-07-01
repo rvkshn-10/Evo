@@ -1,0 +1,34 @@
+{
+  "pin_rows_loaded": 0,
+  "teacher_labeled_pin_rows": 0,
+  "synthetic_teacher_rows": 2400,
+  "teacher": "location_evac_analysis._rank_evacuation_routes with deterministic offline OSRM geometry",
+  "preflight": {
+    "status": "ready",
+    "model_version": "evo1.4",
+    "errors": [],
+    "peoplesense_sample_rows": 12,
+    "real_outcome_rows": 6,
+    "required_pi_sites": [
+      "cordova-park",
+      "folsom-high",
+      "vista-del-lago"
+    ],
+    "configured_pi_sites": [
+      "cordova-park",
+      "folsom-high",
+      "vista-del-lago"
+    ],
+    "coords_confirmed": true,
+    "synthetic_demo": true,
+    "pin_rows": 0,
+    "warnings": [
+      "Pin analysis log is absent; teacher-derived synthetic route rows will be used."
+    ],
+    "route_training_mode": "teacher_synthetic_only",
+    "production_approved": false
+  },
+  "real_outcomes_present": 6,
+  "peoplesense_samples_present": 12,
+  "production_eligible_data": false
+}

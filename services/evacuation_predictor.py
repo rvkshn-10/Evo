@@ -47,16 +47,19 @@ class EvacuationPredictor:
         *,
         use_evo: bool = False,
         use_evo13: bool = False,
+        use_evo14: bool = False,
     ):
-        self.use_evo13 = use_evo13
-        self.use_evo = use_evo and not use_evo13
-        if use_evo13:
+        self.use_evo14 = use_evo14
+        self.use_evo13 = use_evo13 and not use_evo14
+        self.use_evo = use_evo and not use_evo13 and not use_evo14
+        if use_evo13 or use_evo14:
             configured = Path(settings.EVO13_REFERENCE_PATH)
             reference_path = configured if configured.exists() else ENRICHED_REFERENCE_PATH
         self.reference_path = reference_path
         self.records = self._load_records()
         self._evo = None
         self._evo13 = None
+        self._evo14 = None
         self._evo_schema: Optional[dict[str, Any]] = None
         if self.use_evo:
             from services.evo_features import load_feature_schema
@@ -72,6 +75,12 @@ class EvacuationPredictor:
             self._evo_schema = load_feature_schema(settings.EVO13_MODEL_VERSION)
             if not self._evo_schema:
                 self._evo_schema = load_feature_schema(settings.EVO_MODEL_VERSION)
+        if self.use_evo14:
+            from services.evo_features import load_feature_schema
+            from services.evo_runtime import get_evo14_runtime
+
+            self._evo14 = get_evo14_runtime()
+            self._evo_schema = load_feature_schema(settings.EVO14_MODEL_VERSION)
 
     def _load_records(self) -> list[dict[str, Any]]:
         if not self.reference_path.exists():
@@ -120,7 +129,7 @@ class EvacuationPredictor:
         category = CATEGORY_ALIASES.get(category.lower(), category)
         hazard = hazard or {}
 
-        if self.use_evo13:
+        if self.use_evo13 or self.use_evo14:
             return self._predict_evo13_research(
                 spot_id=spot_id,
                 name=name,
@@ -240,7 +249,8 @@ class EvacuationPredictor:
         inference_mode = "internet_enriched_knn"
         evo_source = None
 
-        if self._evo13 and self._evo13.is_available:
+        research_runtime = self._evo14 if self.use_evo14 else self._evo13
+        if research_runtime and research_runtime.is_available:
             evo_out = self._predict_evo(
                 occupancy=occupancy,
                 density=density,
@@ -248,12 +258,12 @@ class EvacuationPredictor:
                 scenario=scenario,
                 event_type=str(hazard.get("event_type") or event_type),
                 hazard=hazard,
-                runtime=self._evo13,
+                runtime=research_runtime,
             )
             if evo_out:
-                model_name = settings.EVO13_MODEL_VERSION
-                inference_mode = "internet_enriched_evo13"
-                evo_source = "evo13_artifacts"
+                model_name = settings.EVO14_MODEL_VERSION if self.use_evo14 else settings.EVO13_MODEL_VERSION
+                inference_mode = "internet_enriched_evo14" if self.use_evo14 else "internet_enriched_evo13"
+                evo_source = "evo14_artifacts" if self.use_evo14 else "evo13_artifacts"
                 success = (success * 0.45) + (evo_out["predicted_evacuation_success_pct"] * 0.55)
                 evac_time = (evac_time * 0.35) + (evo_out["predicted_evacuation_time_min"] * 0.65)
 
@@ -431,6 +441,15 @@ class EvacuationPredictor:
                 hazard_source=str(hazard.get("hazard_source") or "none"),
                 real_hazard_join=bool(hazard.get("real_hazard_join") or hazard.get("hazard_source")),
                 synthetic_augmentation=bool(hazard.get("synthetic_augmentation")),
+                egress_exit_count=float(hazard.get("egress_exit_count") or 0.0),
+                egress_usable_width_m=float(hazard.get("egress_usable_width_m") or 0.0),
+                egress_route_length_m=float(hazard.get("egress_route_length_m") or 0.0),
+                egress_blockage_fraction=float(hazard.get("egress_blockage_fraction") or 0.0),
+                blocked_headings=list(hazard.get("blocked_headings") or []),
+                hazard_point_count=len(hazard.get("blocked_points") or []),
+                blueprint_exit_count=float(hazard.get("blueprint_exit_count") or 0.0),
+                blueprint_floor_count=float(hazard.get("blueprint_floor_count") or 0.0),
+                blueprint_corridor_length_m=float(hazard.get("blueprint_corridor_length_m") or 0.0),
             )
         else:
             features = [

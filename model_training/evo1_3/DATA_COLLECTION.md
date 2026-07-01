@@ -82,6 +82,18 @@ row. Repeated drills across sites, occupancy levels, blocked-route conditions,
 and hazard contexts are substantially more valuable than additional synthetic
 variants.
 
+## User map pin analyses (dashboard → Evo 1.3 training seed)
+
+When operators use **Analyze location** on the map, Evo appends JSONL rows to:
+
+`data/incoming/evo1.3/pin_location_analyses.jsonl`
+
+Fields include GPS, PeopleSense occupancy/density, egress geometry proxies, the
+OSRM-recommended compass direction, and Evo predicted success/time. Rows default
+to `labels_available: false` until FCUSD records measured drill outcomes for
+that site. Merge confirmed outcomes into `real_outcomes.json` (or a sibling file)
+using matching `lat/lon` or a new `pin_id`.
+
 ## Preflight and training
 
 ```bash

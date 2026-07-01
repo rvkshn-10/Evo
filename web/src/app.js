@@ -4,6 +4,7 @@ import {
   setAcceleratorDot,
   syncAcceleratorSelectFromStatus,
 } from "./accelerator.js";
+import { bindLocationPicker } from "./location-picker.js";
 
 let map;
 let markersLayer;
@@ -616,6 +617,7 @@ function renderMap(snapshot) {
       attribution: "&copy; OpenStreetMap",
     }).addTo(map);
     markersLayer = L.layerGroup().addTo(map);
+    bindLocationPicker(map);
   } else if (quakes.length) {
     map.setView([center.lat, center.lon], 7);
   }

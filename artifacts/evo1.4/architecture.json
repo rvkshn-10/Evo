@@ -1,0 +1,11 @@
+{
+  "model_version": "evo1.4",
+  "name": "Multi-task MLP",
+  "heads": [
+    "success regression",
+    "evacuation time regression",
+    "8-way route heading classification",
+    "clear time regression"
+  ],
+  "production_approved": false
+}

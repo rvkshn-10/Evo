@@ -1,0 +1,17 @@
+{
+  "spot_id": "sac-state",
+  "source_url": "https://www.csus.edu/information-resources-technology/security/fire-marshals-office/emergency-procedures.html",
+  "extracted_features": {
+    "exit_count": 0.0,
+    "stairwell_count": 0.0,
+    "floor_count": 0.0,
+    "longest_corridor_m": 0.0,
+    "usable_exit_width_m": 0.0,
+    "assembly_points_count": 0.0
+  },
+  "confidence": "source_text",
+  "extracted_at": "2026-07-01T18:27:58.690235+00:00",
+  "notice": "Assistive metadata only; validate against FCUSD drills and official egress plans.",
+  "osm_building": null,
+  "extraction_error": "404 Client Error: Not Found for url: https://www.csus.edu/information-resources-technology/security/fire-marshals-office/emergency-procedures.html"
+}

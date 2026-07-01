@@ -1,0 +1,1383 @@
+<?xml version="1.0"?>
+<net name="onnx_Frontend_IR" version="11">
+	<layers>
+		<layer id="0" name="features" type="Parameter" version="opset1">
+			<data shape="?,25" element_type="f32" />
+			<output>
+				<port id="0" precision="FP32" names="features">
+					<dim>-1</dim>
+					<dim>25</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="1" name="model.shared.0.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="128, 25" offset="0" size="6400" />
+			<output>
+				<port id="0" precision="FP16" names="model.shared.0.weight">
+					<dim>128</dim>
+					<dim>25</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="2" name="model.shared.0.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>128</dim>
+					<dim>25</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>128</dim>
+					<dim>25</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="3" name="/model/shared/shared.0/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>25</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>128</dim>
+					<dim>25</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>128</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="4" name="Constant_2706_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 128" offset="6400" size="256" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>128</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="5" name="Constant_2706" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>128</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>128</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="6" name="/model/shared/shared.0/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>128</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>128</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/shared/shared.0/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>128</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="7" name="/model/shared/shared.1/Relu" type="ReLU" version="opset1">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>128</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/model/shared/shared.1/Relu_output_0">
+					<dim>-1</dim>
+					<dim>128</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="8" name="model.shared.3.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="64, 128" offset="6656" size="16384" />
+			<output>
+				<port id="0" precision="FP16" names="model.shared.3.weight">
+					<dim>64</dim>
+					<dim>128</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="9" name="model.shared.3.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>64</dim>
+					<dim>128</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>64</dim>
+					<dim>128</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="10" name="/model/shared/shared.3/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>128</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>64</dim>
+					<dim>128</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="11" name="Constant_2707_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 64" offset="23040" size="128" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="12" name="Constant_2707" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="13" name="/model/shared/shared.3/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/shared/shared.3/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="14" name="/model/shared/shared.4/Relu" type="ReLU" version="opset1">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/model/shared/shared.4/Relu_output_0">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="15" name="model.success.0.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="32, 64" offset="23168" size="4096" />
+			<output>
+				<port id="0" precision="FP16" names="model.success.0.weight">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="16" name="model.success.0.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="17" name="/model/success/success.0/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="18" name="Constant_2708_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 32" offset="27264" size="64" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="19" name="Constant_2708" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="20" name="/model/success/success.0/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/success/success.0/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="21" name="/model/success/success.1/Relu" type="ReLU" version="opset1">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/model/success/success.1/Relu_output_0">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="22" name="model.success.2.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 32" offset="27328" size="64" />
+			<output>
+				<port id="0" precision="FP16" names="model.success.2.weight">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="23" name="model.success.2.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="24" name="/model/success/success.2/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="25" name="Constant_2709" type="Const" version="opset1">
+			<data element_type="f32" shape="1, 1" offset="27392" size="4" />
+			<output>
+				<port id="0" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="26" name="/model/success/success.2/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/success/success.2/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="27" name="model.evac_time.0.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="32, 64" offset="27396" size="4096" />
+			<output>
+				<port id="0" precision="FP16" names="model.evac_time.0.weight">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="28" name="model.evac_time.0.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="29" name="/model/evac_time/evac_time.0/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="30" name="Constant_2710_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 32" offset="31492" size="64" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="31" name="Constant_2710" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="32" name="/model/evac_time/evac_time.0/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/evac_time/evac_time.0/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="33" name="/model/evac_time/evac_time.1/Relu" type="ReLU" version="opset1">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/model/evac_time/evac_time.1/Relu_output_0">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="34" name="model.evac_time.2.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 32" offset="31556" size="64" />
+			<output>
+				<port id="0" precision="FP16" names="model.evac_time.2.weight">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="35" name="model.evac_time.2.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="36" name="/model/evac_time/evac_time.2/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="37" name="Constant_2711" type="Const" version="opset1">
+			<data element_type="f32" shape="1, 1" offset="31620" size="4" />
+			<output>
+				<port id="0" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="38" name="/model/evac_time/evac_time.2/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/evac_time/evac_time.2/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="39" name="model.clear_time.0.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="32, 64" offset="31624" size="4096" />
+			<output>
+				<port id="0" precision="FP16" names="model.clear_time.0.weight">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="40" name="model.clear_time.0.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="41" name="/model/clear_time/clear_time.0/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>32</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="42" name="Constant_2712_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 32" offset="35720" size="64" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="43" name="Constant_2712" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="44" name="/model/clear_time/clear_time.0/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/clear_time/clear_time.0/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="45" name="/model/clear_time/clear_time.1/Relu" type="ReLU" version="opset1">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/model/clear_time/clear_time.1/Relu_output_0">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="46" name="model.clear_time.2.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 32" offset="35784" size="64" />
+			<output>
+				<port id="0" precision="FP16" names="model.clear_time.2.weight">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="47" name="model.clear_time.2.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="48" name="/model/clear_time/clear_time.2/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>32</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>32</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="49" name="Constant_2713" type="Const" version="opset1">
+			<data element_type="f32" shape="1, 1" offset="35848" size="4" />
+			<output>
+				<port id="0" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="50" name="/model/clear_time/clear_time.2/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/clear_time/clear_time.2/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="51" name="/Concat" type="Concat" version="opset1">
+			<data axis="1" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="3" precision="FP32" names="/Concat_output_0">
+					<dim>-1</dim>
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="52" name="Constant_2714_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 3" offset="35852" size="6" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="53" name="Constant_2714" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="54" name="/Mul" type="Multiply" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>3</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/Mul_output_0">
+					<dim>-1</dim>
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="55" name="Constant_2715_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 3" offset="35858" size="6" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="56" name="Constant_2715" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="57" name="/Add" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>3</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>3</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/Add_output_0">
+					<dim>-1</dim>
+					<dim>3</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="58" name="/Constant_7" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="35864" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_7_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="59" name="/Constant_8" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="35872" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_8_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="60" name="/Constant_9" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="35880" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_9_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="61" name="/Constant_6" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="35880" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_6_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="62" name="/Slice_1" type="Slice" version="opset8">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>3</dim>
+				</port>
+				<port id="1" precision="I64">
+					<dim>1</dim>
+				</port>
+				<port id="2" precision="I64">
+					<dim>1</dim>
+				</port>
+				<port id="3" precision="I64">
+					<dim>1</dim>
+				</port>
+				<port id="4" precision="I64">
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="5" precision="FP32" names="/Slice_1_output_0">
+					<dim>-1</dim>
+					<dim>2</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="63" name="model.heading.0.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="48, 64" offset="35888" size="6144" />
+			<output>
+				<port id="0" precision="FP16" names="model.heading.0.weight">
+					<dim>48</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="64" name="model.heading.0.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>48</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>48</dim>
+					<dim>64</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="65" name="/model/heading/heading.0/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>64</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>48</dim>
+					<dim>64</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>48</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="66" name="Constant_2716_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 48" offset="42032" size="96" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>48</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="67" name="Constant_2716" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>48</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>48</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="68" name="/model/heading/heading.0/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>48</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>48</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/heading/heading.0/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>48</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="69" name="/model/heading/heading.1/Relu" type="ReLU" version="opset1">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>48</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/model/heading/heading.1/Relu_output_0">
+					<dim>-1</dim>
+					<dim>48</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="70" name="model.heading.2.weight_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="8, 48" offset="42128" size="768" />
+			<output>
+				<port id="0" precision="FP16" names="model.heading.2.weight">
+					<dim>8</dim>
+					<dim>48</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="71" name="model.heading.2.weight" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>8</dim>
+					<dim>48</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>8</dim>
+					<dim>48</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="72" name="/model/heading/heading.2/Gemm/WithoutBiases" type="MatMul" version="opset1">
+			<data transpose_a="false" transpose_b="true" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>48</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>8</dim>
+					<dim>48</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>8</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="73" name="Constant_2717" type="Const" version="opset1">
+			<data element_type="f32" shape="1, 8" offset="42896" size="32" />
+			<output>
+				<port id="0" precision="FP32">
+					<dim>1</dim>
+					<dim>8</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="74" name="/model/heading/heading.2/Gemm" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>8</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>8</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/model/heading/heading.2/Gemm_output_0">
+					<dim>-1</dim>
+					<dim>8</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="75" name="/Constant_1" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="35872" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_1_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="76" name="/Constant_2" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="42928" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_2_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="77" name="/Constant_3" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="35880" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_3_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="78" name="/Constant" type="Const" version="opset1">
+			<data element_type="i64" shape="1" offset="35880" size="8" />
+			<output>
+				<port id="0" precision="I64" names="/Constant_output_0">
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="79" name="/Slice" type="Slice" version="opset8">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>3</dim>
+				</port>
+				<port id="1" precision="I64">
+					<dim>1</dim>
+				</port>
+				<port id="2" precision="I64">
+					<dim>1</dim>
+				</port>
+				<port id="3" precision="I64">
+					<dim>1</dim>
+				</port>
+				<port id="4" precision="I64">
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="5" precision="FP32" names="/Slice_output_0">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="80" name="/Exp" type="Exp" version="opset1">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/Exp_output_0">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="81" name="Constant_2718_compressed" type="Const" version="opset1">
+			<data element_type="f16" shape="1, 1" offset="42936" size="2" />
+			<output>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="82" name="Constant_2718" type="Convert" version="opset1">
+			<data destination_type="f32" />
+			<rt_info>
+				<attribute name="decompression" version="0" />
+			</rt_info>
+			<input>
+				<port id="0" precision="FP16">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="83" name="/Sub" type="Add" version="opset1">
+			<data auto_broadcast="numpy" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="2" precision="FP32" names="/Sub_output_0">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="84" name="/Clip" type="Clamp" version="opset1">
+			<data min="0" max="3.4028234663852886e+38" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="1" precision="FP32" names="/Clip_output_0">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="85" name="predictions" type="Concat" version="opset1">
+			<data axis="1" />
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>2</dim>
+				</port>
+				<port id="1" precision="FP32">
+					<dim>-1</dim>
+					<dim>8</dim>
+				</port>
+				<port id="2" precision="FP32">
+					<dim>-1</dim>
+					<dim>1</dim>
+				</port>
+			</input>
+			<output>
+				<port id="3" precision="FP32" names="predictions">
+					<dim>-1</dim>
+					<dim>11</dim>
+				</port>
+			</output>
+		</layer>
+		<layer id="86" name="predictions/sink_port_0" type="Result" version="opset1" output_names="predictions">
+			<input>
+				<port id="0" precision="FP32">
+					<dim>-1</dim>
+					<dim>11</dim>
+				</port>
+			</input>
+		</layer>
+	</layers>
+	<edges>
+		<edge from-layer="0" from-port="0" to-layer="3" to-port="0" />
+		<edge from-layer="1" from-port="0" to-layer="2" to-port="0" />
+		<edge from-layer="2" from-port="1" to-layer="3" to-port="1" />
+		<edge from-layer="3" from-port="2" to-layer="6" to-port="0" />
+		<edge from-layer="4" from-port="0" to-layer="5" to-port="0" />
+		<edge from-layer="5" from-port="1" to-layer="6" to-port="1" />
+		<edge from-layer="6" from-port="2" to-layer="7" to-port="0" />
+		<edge from-layer="7" from-port="1" to-layer="10" to-port="0" />
+		<edge from-layer="8" from-port="0" to-layer="9" to-port="0" />
+		<edge from-layer="9" from-port="1" to-layer="10" to-port="1" />
+		<edge from-layer="10" from-port="2" to-layer="13" to-port="0" />
+		<edge from-layer="11" from-port="0" to-layer="12" to-port="0" />
+		<edge from-layer="12" from-port="1" to-layer="13" to-port="1" />
+		<edge from-layer="13" from-port="2" to-layer="14" to-port="0" />
+		<edge from-layer="14" from-port="1" to-layer="17" to-port="0" />
+		<edge from-layer="14" from-port="1" to-layer="65" to-port="0" />
+		<edge from-layer="14" from-port="1" to-layer="41" to-port="0" />
+		<edge from-layer="14" from-port="1" to-layer="29" to-port="0" />
+		<edge from-layer="15" from-port="0" to-layer="16" to-port="0" />
+		<edge from-layer="16" from-port="1" to-layer="17" to-port="1" />
+		<edge from-layer="17" from-port="2" to-layer="20" to-port="0" />
+		<edge from-layer="18" from-port="0" to-layer="19" to-port="0" />
+		<edge from-layer="19" from-port="1" to-layer="20" to-port="1" />
+		<edge from-layer="20" from-port="2" to-layer="21" to-port="0" />
+		<edge from-layer="21" from-port="1" to-layer="24" to-port="0" />
+		<edge from-layer="22" from-port="0" to-layer="23" to-port="0" />
+		<edge from-layer="23" from-port="1" to-layer="24" to-port="1" />
+		<edge from-layer="24" from-port="2" to-layer="26" to-port="0" />
+		<edge from-layer="25" from-port="0" to-layer="26" to-port="1" />
+		<edge from-layer="26" from-port="2" to-layer="51" to-port="0" />
+		<edge from-layer="27" from-port="0" to-layer="28" to-port="0" />
+		<edge from-layer="28" from-port="1" to-layer="29" to-port="1" />
+		<edge from-layer="29" from-port="2" to-layer="32" to-port="0" />
+		<edge from-layer="30" from-port="0" to-layer="31" to-port="0" />
+		<edge from-layer="31" from-port="1" to-layer="32" to-port="1" />
+		<edge from-layer="32" from-port="2" to-layer="33" to-port="0" />
+		<edge from-layer="33" from-port="1" to-layer="36" to-port="0" />
+		<edge from-layer="34" from-port="0" to-layer="35" to-port="0" />
+		<edge from-layer="35" from-port="1" to-layer="36" to-port="1" />
+		<edge from-layer="36" from-port="2" to-layer="38" to-port="0" />
+		<edge from-layer="37" from-port="0" to-layer="38" to-port="1" />
+		<edge from-layer="38" from-port="2" to-layer="51" to-port="1" />
+		<edge from-layer="39" from-port="0" to-layer="40" to-port="0" />
+		<edge from-layer="40" from-port="1" to-layer="41" to-port="1" />
+		<edge from-layer="41" from-port="2" to-layer="44" to-port="0" />
+		<edge from-layer="42" from-port="0" to-layer="43" to-port="0" />
+		<edge from-layer="43" from-port="1" to-layer="44" to-port="1" />
+		<edge from-layer="44" from-port="2" to-layer="45" to-port="0" />
+		<edge from-layer="45" from-port="1" to-layer="48" to-port="0" />
+		<edge from-layer="46" from-port="0" to-layer="47" to-port="0" />
+		<edge from-layer="47" from-port="1" to-layer="48" to-port="1" />
+		<edge from-layer="48" from-port="2" to-layer="50" to-port="0" />
+		<edge from-layer="49" from-port="0" to-layer="50" to-port="1" />
+		<edge from-layer="50" from-port="2" to-layer="51" to-port="2" />
+		<edge from-layer="51" from-port="3" to-layer="54" to-port="0" />
+		<edge from-layer="52" from-port="0" to-layer="53" to-port="0" />
+		<edge from-layer="53" from-port="1" to-layer="54" to-port="1" />
+		<edge from-layer="54" from-port="2" to-layer="57" to-port="0" />
+		<edge from-layer="55" from-port="0" to-layer="56" to-port="0" />
+		<edge from-layer="56" from-port="1" to-layer="57" to-port="1" />
+		<edge from-layer="57" from-port="2" to-layer="62" to-port="0" />
+		<edge from-layer="57" from-port="2" to-layer="79" to-port="0" />
+		<edge from-layer="58" from-port="0" to-layer="62" to-port="1" />
+		<edge from-layer="59" from-port="0" to-layer="62" to-port="2" />
+		<edge from-layer="60" from-port="0" to-layer="62" to-port="3" />
+		<edge from-layer="61" from-port="0" to-layer="62" to-port="4" />
+		<edge from-layer="62" from-port="5" to-layer="85" to-port="0" />
+		<edge from-layer="63" from-port="0" to-layer="64" to-port="0" />
+		<edge from-layer="64" from-port="1" to-layer="65" to-port="1" />
+		<edge from-layer="65" from-port="2" to-layer="68" to-port="0" />
+		<edge from-layer="66" from-port="0" to-layer="67" to-port="0" />
+		<edge from-layer="67" from-port="1" to-layer="68" to-port="1" />
+		<edge from-layer="68" from-port="2" to-layer="69" to-port="0" />
+		<edge from-layer="69" from-port="1" to-layer="72" to-port="0" />
+		<edge from-layer="70" from-port="0" to-layer="71" to-port="0" />
+		<edge from-layer="71" from-port="1" to-layer="72" to-port="1" />
+		<edge from-layer="72" from-port="2" to-layer="74" to-port="0" />
+		<edge from-layer="73" from-port="0" to-layer="74" to-port="1" />
+		<edge from-layer="74" from-port="2" to-layer="85" to-port="1" />
+		<edge from-layer="75" from-port="0" to-layer="79" to-port="1" />
+		<edge from-layer="76" from-port="0" to-layer="79" to-port="2" />
+		<edge from-layer="77" from-port="0" to-layer="79" to-port="3" />
+		<edge from-layer="78" from-port="0" to-layer="79" to-port="4" />
+		<edge from-layer="79" from-port="5" to-layer="80" to-port="0" />
+		<edge from-layer="80" from-port="1" to-layer="83" to-port="0" />
+		<edge from-layer="81" from-port="0" to-layer="82" to-port="0" />
+		<edge from-layer="82" from-port="1" to-layer="83" to-port="1" />
+		<edge from-layer="83" from-port="2" to-layer="84" to-port="0" />
+		<edge from-layer="84" from-port="1" to-layer="85" to-port="2" />
+		<edge from-layer="85" from-port="3" to-layer="86" to-port="0" />
+	</edges>
+	<rt_info>
+		<info name="OpenVINO Runtime" value="2026.2.1-21919-ede283a88e3-releases/2026/2" />
+		<Runtime_version value="2026.2.1-21919-ede283a88e3-releases/2026/2" />
+		<conversion_parameters>
+			<input_model value="DIR/evo1.4.onnx" />
+			<is_python_object value="False" />
+		</conversion_parameters>
+	</rt_info>
+</net>

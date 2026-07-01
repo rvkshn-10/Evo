@@ -1,0 +1,2 @@
+-r ../evo1_2/requirements-colab.txt
+pypdf>=5,<7

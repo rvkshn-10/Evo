@@ -146,6 +146,33 @@ class EvoRuntime:
             logger.error("Evo inference failed: %s", exc)
             return None
 
+    def predict_route_head(self, features: list[float]) -> Optional[dict[str, Any]]:
+        """Return Evo 1.4 route outputs; None preserves the OSRM fallback."""
+        if self.model_version != settings.EVO14_MODEL_VERSION or not self.ensure_loaded():
+            return None
+        try:
+            import numpy as np
+
+            vector = np.asarray(features, dtype=np.float32).reshape(1, -1)
+            if self._backend == "openvino":
+                outputs = np.asarray(list(self._compiled(vector).values())[0])[0]
+            else:
+                outputs = self._compiled.run(None, {self._compiled.get_inputs()[0].name: vector})[0][0]
+            labels = ["North", "Northeast", "East", "Southeast", "South", "Southwest", "West", "Northwest"]
+            logits = np.asarray(outputs[2:10], dtype=np.float32)
+            probabilities = np.exp(logits - logits.max()); probabilities /= probabilities.sum()
+            index = int(probabilities.argmax())
+            return {
+                "evacuation_success_pct": float(outputs[0]),
+                "evacuation_time_min": float(outputs[1]),
+                "best_compass_heading": labels[index],
+                "best_heading_deg": index * 45,
+                "heading_confidence": float(probabilities[index]),
+                "estimated_clear_time_min": float(outputs[10]),
+            }
+        except Exception as exc:
+            logger.error("Evo route-head inference failed: %s", exc)
+            return None
     def get_runtime_status(self) -> dict[str, Any]:
         """Probe load and report which inference backend is active."""
         loaded = self.ensure_loaded()
@@ -235,6 +262,7 @@ def _placeholder_metrics() -> dict[str, Any]:
 
 _evo_runtime: Optional[EvoRuntime] = None
 _evo13_runtime: Optional[EvoRuntime] = None
+_evo14_runtime: Optional[EvoRuntime] = None
 
 
 def get_evo_runtime() -> EvoRuntime:
@@ -253,3 +281,11 @@ def get_evo13_runtime() -> EvoRuntime:
             model_version=version,
         )
     return _evo13_runtime
+
+
+def get_evo14_runtime() -> EvoRuntime:
+    global _evo14_runtime
+    if _evo14_runtime is None:
+        version = settings.EVO14_MODEL_VERSION
+        _evo14_runtime = EvoRuntime(settings.PROJECT_ROOT / "models" / version, version)
+    return _evo14_runtime

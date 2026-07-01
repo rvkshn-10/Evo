@@ -38,6 +38,8 @@ class Settings:
         "EVO13_REFERENCE_PATH",
         str(PROJECT_ROOT / "data/processed/evacuation_reference_enriched_rows.json"),
     )
+    # Evo 1.4 map-pin route-head research model (never production by default)
+    EVO14_MODEL_VERSION: str = os.getenv("EVO14_MODEL_VERSION", "evo1.4")
 
     # CORS — comma-separated extra origins (e.g. Vercel preview URL)
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "")

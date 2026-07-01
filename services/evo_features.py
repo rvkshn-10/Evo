@@ -85,6 +85,11 @@ def encode_features(
     egress_usable_width_m: float = 0.0,
     egress_route_length_m: float = 0.0,
     egress_blockage_fraction: float = 0.0,
+    blocked_headings: Optional[list[int]] = None,
+    hazard_point_count: int = 0,
+    blueprint_exit_count: float = 0.0,
+    blueprint_floor_count: float = 0.0,
+    blueprint_corridor_length_m: float = 0.0,
 ) -> list[float]:
     if not schema:
         return []
@@ -112,35 +117,41 @@ def encode_features(
     real_flag = 1.0 if real_hazard_join else 0.0
     synthetic_flag = 1.0 if synthetic_augmentation else 0.0
 
-    raw_numeric = [
-        occupancy_log,
-        den,
-        severity,
-        magnitude_log,
-        distance_log,
-        depth,
-        interaction,
-        utilization,
-        real_flag,
-        synthetic_flag,
-    ]
     requested_numeric = schema.get("numeric_features") or []
-    if len(requested_numeric) > len(raw_numeric):
-        ps_count = occ if peoplesense_count is None else max(float(peoplesense_count), 0.0)
-        ps_density = den if peoplesense_density is None else max(0.0, min(1.0, float(peoplesense_density)))
-        raw_numeric.extend(
-            [
-                math.log1p(ps_count),
-                ps_density,
-                max(0.0, float(peoplesense_volatility)),
-                math.log1p(max(0.0, float(peoplesense_sample_age_hours))),
-                1.0 if peoplesense_observed else 0.0,
-                max(0.0, float(egress_exit_count)),
-                max(0.0, float(egress_usable_width_m)),
-                max(0.0, float(egress_route_length_m)),
-                max(0.0, min(1.0, float(egress_blockage_fraction))),
-            ]
-        )
+    ps_count = occ if peoplesense_count is None else max(float(peoplesense_count), 0.0)
+    ps_density = den if peoplesense_density is None else max(0.0, min(1.0, float(peoplesense_density)))
+    blocked = {int(value) % 360 for value in (blocked_headings or [])}
+    values_by_name = {
+        "occupancy_log_scaled": occupancy_log,
+        "density_scaled": den,
+        "severity_score_scaled": severity,
+        "hazard_magnitude_log_scaled": magnitude_log,
+        "hazard_distance_log_scaled": distance_log,
+        "hazard_depth_km_scaled": depth,
+        "occupancy_density_interaction_scaled": interaction,
+        "capacity_utilization_scaled": utilization,
+        "real_hazard_join_flag_scaled": real_flag,
+        "synthetic_augmentation_flag_scaled": synthetic_flag,
+        "peoplesense_count_log_scaled": math.log1p(ps_count),
+        "peoplesense_density_scaled": ps_density,
+        "peoplesense_volatility_scaled": max(0.0, float(peoplesense_volatility)),
+        "peoplesense_sample_age_hours_log_scaled": math.log1p(max(0.0, float(peoplesense_sample_age_hours))),
+        "peoplesense_observed_flag_scaled": 1.0 if peoplesense_observed else 0.0,
+        "egress_exit_count_scaled": max(0.0, float(egress_exit_count)),
+        "egress_usable_width_m_scaled": max(0.0, float(egress_usable_width_m)),
+        "egress_route_length_m_scaled": max(0.0, float(egress_route_length_m)),
+        "egress_blockage_fraction_scaled": max(0.0, min(1.0, float(egress_blockage_fraction))),
+        "blocked_exit_fraction_scaled": len(blocked) / 8.0,
+        "hazard_point_count_scaled": max(0.0, float(hazard_point_count)),
+        "blueprint_exit_count_scaled": max(0.0, float(blueprint_exit_count)),
+        "blueprint_floor_count_scaled": max(0.0, float(blueprint_floor_count)),
+        "blueprint_corridor_length_scaled": max(0.0, float(blueprint_corridor_length_m)),
+        "detour_required_flag_scaled": 1.0 if blocked else 0.0,
+        "route_duration_proxy_scaled": max(0.0, float(egress_route_length_m)) / 72.0,
+        "crowd_flow_pressure_scaled": occ / max(float(egress_exit_count) * float(egress_usable_width_m) * 45.0 * (1.0 - min(0.95, float(egress_blockage_fraction))), 1.0),
+        **{f"blocked_heading_{heading}_flag_scaled": float(heading in blocked) for heading in range(0, 360, 45)},
+    }
+    raw_numeric = [values_by_name.get(name, 0.0) for name in requested_numeric]
 
     numeric_scaled = []
     for index, value in enumerate(raw_numeric):
@@ -150,12 +161,15 @@ def encode_features(
 
     categoricals = schema.get("categorical_features") or {}
     one_hot: list[float] = []
-    for column, values in (
+    categorical_groups = [
         ("category", categoricals.get("category", [])),
         ("scenario", categoricals.get("scenario", [])),
         ("event_type", categoricals.get("event_type", [])),
-        ("hazard_source", categoricals.get("hazard_source", HAZARD_SOURCES)),
-    ):
+        ("hazard_source", categoricals.get("hazard_source", [])),
+    ]
+    for column, values in categorical_groups:
+        if not values:
+            continue
         selected = {
             "category": category,
             "scenario": scenario,

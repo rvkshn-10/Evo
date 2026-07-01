@@ -29,7 +29,7 @@ from services.disaster_history import (
     storage_backend,
 )
 from services.evo_live_flow import build_live_flow
-from services.evo_runtime import get_evo13_runtime, get_evo_runtime
+from services.evo_runtime import get_evo13_runtime, get_evo14_runtime, get_evo_runtime
 from services.pipeline_status import get_pipeline_status
 from services.run_modes import RunMode, execute_run_mode_sync
 from services.evacuation_predictor import EvacuationPredictor
@@ -100,6 +100,64 @@ class EvoAcceleratorRequest(BaseModel):
         ...,
         description="auto | cpu | ncs1 | ncs2 — Neural Compute Stick or CPU inference",
     )
+
+
+class BlockedPointRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
+    radius_m: float = Field(default=80.0, ge=10, le=500)
+    reason: Optional[str] = None
+
+
+class BlueprintHintRequest(BaseModel):
+    url: Optional[str] = Field(default=None, description="Public floor plan or campus map URL")
+    exit_count: Optional[int] = Field(default=None, ge=1, le=100)
+    notes: Optional[str] = None
+
+
+class LocationAnalyzeRequest(BaseModel):
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
+    name: Optional[str] = None
+    category: str = "Office Building"
+    use_evo13: bool = True
+    use_evo14: bool = True
+    use_llm: bool = False
+    blocked_headings: list[int] = Field(default_factory=list)
+    blocked_points: list[BlockedPointRequest] = Field(default_factory=list)
+    blockage_reason: Optional[str] = Field(
+        default=None, description="e.g. fire, flood, debris, police cordon"
+    )
+    blueprint: Optional[BlueprintHintRequest] = None
+
+
+@router.post("/location/analyze")
+async def analyze_map_location_route(request: LocationAnalyzeRequest):
+    """
+    Analyze a user-selected map point: PeopleSense occupancy, Evo prediction,
+    ranked walking evacuation routes (OSRM), optional detours when exits blocked.
+    """
+    from services.location_evac_analysis import analyze_map_location
+    from services.llm_router import generate_location_evac_briefing
+
+    blueprint = request.blueprint.model_dump() if request.blueprint else None
+
+    analysis = analyze_map_location(
+        lat=request.lat,
+        lon=request.lon,
+        name=request.name,
+        category=request.category,
+        use_evo13=request.use_evo13,
+        use_evo14=request.use_evo14,
+        blocked_headings=request.blocked_headings,
+        blocked_points=[point.model_dump() for point in request.blocked_points],
+        blockage_reason=request.blockage_reason,
+        blueprint=blueprint,
+    )
+    llm_briefing = None
+    if request.use_llm:
+        llm_briefing = await generate_location_evac_briefing(analysis)
+    return {"analysis": analysis, "rule_based_briefing": analysis["rule_based_briefing"], "llm_briefing": llm_briefing}
 
 
 @router.post("/event")
@@ -405,7 +463,9 @@ async def get_evo_live_flow(
 
 @router.get("/evo/runtime")
 async def get_evo_runtime_status(version: Optional[str] = Query(default=None)):
-    """Active production or Evo 1.3 research inference backend."""
+    """Active production or versioned research inference backend."""
+    if version == settings.EVO14_MODEL_VERSION:
+        return get_evo14_runtime().get_runtime_status()
     if version == settings.EVO13_MODEL_VERSION:
         return get_evo13_runtime().get_runtime_status()
     return get_evo_runtime().get_runtime_status()

@@ -150,6 +150,12 @@
             >
               <span aria-hidden="true">☰</span> Layers
             </button>
+            <button id="pickLocationBtn" class="btn neo-btn" type="button" aria-pressed="false">
+              Analyze location
+            </button>
+            <button id="blockHazardBtn" class="btn neo-btn" type="button" aria-pressed="false" title="Mark fire/flood on map">
+              Mark hazard
+            </button>
           </div>
           <div id="map"></div>
           <div class="map-legend">
@@ -157,7 +163,15 @@
             <span class="legend-item quake">● Earthquake epicenter</span>
             <span class="legend-item alert">○ Weather / hazard zone</span>
             <span class="legend-item spot">● Monitoring spot</span>
+            <span class="legend-item route">— Recommended egress route</span>
           </div>
+          <section id="locationAnalysisPanel" class="location-analysis-panel hidden" aria-live="polite">
+            <header class="location-analysis-toolbar">
+              <h2>Location evacuation analysis</h2>
+              <button id="locationAnalysisClose" class="btn neo-btn icon-btn" type="button" aria-label="Close">✕</button>
+            </header>
+            <div id="locationAnalysisBody" class="location-analysis-body"></div>
+          </section>
         </section>
 
         <section class="panel stats-panel glass-panel neo-card">

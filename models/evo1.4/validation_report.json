@@ -1,0 +1,77 @@
+{
+  "model_version": "evo1.4",
+  "status": "complete_research_demo",
+  "selected_model": "evo1.4_multitask_mlp",
+  "metrics": {
+    "mae_success_pct": 1.594637393951416,
+    "r2_success_pct": 0.09474378824234009,
+    "mae_time_min": 1.1151241064071655,
+    "r2_time_min": -0.939704418182373,
+    "route_heading_accuracy": 0.9979166666666667,
+    "clear_time_mae_min": 1.435096025466919,
+    "held_out_rows": 480
+  },
+  "quality_gates": {
+    "route_heading_accuracy_at_least_0_55": true,
+    "clear_time_mae_at_most_2_min": true,
+    "success_mae_under_2_pct": true,
+    "success_r2_at_least_0_25": false,
+    "time_mae_under_1_min": false,
+    "time_r2_at_least_0_75": false,
+    "onnx_parity": true,
+    "openvino_parity": true,
+    "openvino_ir_loaded": true,
+    "p95_inference_under_10ms": true
+  },
+  "failed_quality_gates": [
+    "success_r2_at_least_0_25",
+    "time_mae_under_1_min",
+    "time_r2_at_least_0_75"
+  ],
+  "all_quality_gates_pass": false,
+  "failure_classification": "DATA_CEILING",
+  "production_approved": false,
+  "production_promotion_allowed": false,
+  "promotion_recommendation": "keep_evo1.2_hybrid",
+  "teacher_label_notice": "Route labels are synthetic/teacher-derived and are not FCUSD drill validation.",
+  "export_validation": {
+    "onnx_parity": true,
+    "openvino_parity": true,
+    "openvino_ir_loaded": true,
+    "p95_inference_ms": 0.07291904999999996
+  },
+  "data_audit": {
+    "pin_rows_loaded": 0,
+    "teacher_labeled_pin_rows": 0,
+    "synthetic_teacher_rows": 2400,
+    "teacher": "location_evac_analysis._rank_evacuation_routes with deterministic offline OSRM geometry",
+    "preflight": {
+      "status": "ready",
+      "model_version": "evo1.4",
+      "errors": [],
+      "peoplesense_sample_rows": 12,
+      "real_outcome_rows": 6,
+      "required_pi_sites": [
+        "cordova-park",
+        "folsom-high",
+        "vista-del-lago"
+      ],
+      "configured_pi_sites": [
+        "cordova-park",
+        "folsom-high",
+        "vista-del-lago"
+      ],
+      "coords_confirmed": true,
+      "synthetic_demo": true,
+      "pin_rows": 0,
+      "warnings": [
+        "Pin analysis log is absent; teacher-derived synthetic route rows will be used."
+      ],
+      "route_training_mode": "teacher_synthetic_only",
+      "production_approved": false
+    },
+    "real_outcomes_present": 6,
+    "peoplesense_samples_present": 12,
+    "production_eligible_data": false
+  }
+}

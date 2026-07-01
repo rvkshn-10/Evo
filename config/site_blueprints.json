@@ -1,0 +1,31 @@
+{
+  "note": "Add official public floor plan or campus egress map URLs per FCUSD site. Offline script discover_site_blueprints.py reads these — no LLM at inference.",
+  "sites": {
+    "folsom-high": {
+      "blueprint_url": null,
+      "placeholder_url": "FCUSD_PUBLIC_FOLSOM_HIGH_EGRESS_PLAN_URL_TBD",
+      "campus_map_url": null,
+      "manual_exit_count": null,
+      "manual_floor_count": null,
+      "notes": "Paste PDF or PNG URL when FCUSD provides egress plan"
+    },
+    "vista-del-lago": {
+      "blueprint_url": null,
+      "campus_map_url": null,
+      "manual_exit_count": null,
+      "manual_floor_count": null
+    },
+    "sac-state": {
+      "blueprint_url": null,
+      "placeholder_url": "PUBLIC_SAC_STATE_BUILDING_PLAN_URL_TBD",
+      "campus_map_url": "https://www.csus.edu/information-resources-technology/security/fire-marshals-office/emergency-procedures.html",
+      "manual_exit_count": null,
+      "manual_floor_count": null,
+      "notes": "CSU Sacramento emergency procedures page — extract exit counts manually into manual_exit_count"
+    },
+    "cordova-park": {
+      "blueprint_url": null,
+      "campus_map_url": null
+    }
+  }
+}
